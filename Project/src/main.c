@@ -11,6 +11,8 @@
 #include "server.h"
 #include "http.h"
 
+static int server_socket_fd = -1;
+
 static void sigchld_handler(int s) {
     (void)s;
     int saved_errno = errno;
@@ -24,31 +26,60 @@ static void sigchld_handler(int s) {
     errno = saved_errno;
 }
 
-static void sigchld_setup() {
-    struct sigaction sa;
-    sa.sa_handler = sigchld_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_RESTART;
+static void sigint_handler(int s) {
+    (void)s;
+    const char msg[] = "\n[INFO]: Signal received. Shutting down server gracefully...\n";
+    (void)!write(STDOUT_FILENO, msg, sizeof(msg) - 1);
+    
+    if (server_socket_fd != -1) {
+        close(server_socket_fd);
+    }
+    
+    _exit(EXIT_SUCCESS);
+}
 
-    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-        perror("[ERR]: Error configuring sigaction");
+static void signal_setup() {
+    struct sigaction sa_chld = {};
+    sa_chld.sa_handler = sigchld_handler;
+    sigemptyset(&sa_chld.sa_mask);
+    sa_chld.sa_flags = SA_RESTART;
+
+    if (sigaction(SIGCHLD, &sa_chld, NULL) == -1) {
+        perror("[ERR]: Error configuring SIGCHLD");
+        exit(EXIT_FAILURE);
+    }
+
+    struct sigaction sa_int = {};
+    sa_int.sa_handler = sigint_handler;
+    sigemptyset(&sa_int.sa_mask);
+    sa_int.sa_flags = 0;
+
+    if (sigaction(SIGINT, &sa_int, NULL) == -1) {
+        perror("[ERR]: Error configuring SIGINT");
+        exit(EXIT_FAILURE);
+    }
+
+    if (sigaction(SIGTSTP, &sa_int, NULL) == -1) {
+        perror("[ERR]: Error configuring SIGTSTP");
         exit(EXIT_FAILURE);
     }
 }
 
 int main() {
-    sigchld_setup();
+    signal_setup();
 
-    int server_socket = server_init(PORT);
+    server_socket_fd = server_init(PORT);
     int client_socket;
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
 
-    while ((client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &client_len))) {
+    while ((client_socket = accept(server_socket_fd, (struct sockaddr *)&client_addr, &client_len))) {
         if (client_socket < 0) {
+            if (errno == EINTR || errno == EBADF) break;
             perror("[ERR]: Error in accept");
             continue;
         }
+        
         printf("[INFO]: New socket created: %d\n", client_socket);
 
         switch (fork()) {
@@ -57,20 +88,19 @@ int main() {
             perror("[ERR]: Error creating child process (fork)");
             break;
         case 0:
-            close(server_socket);
+            close(server_socket_fd);
             printf("[INFO]: Child process (PID: %d) started handling socket %d.\n", getpid(), client_socket);
             http_handle_client(client_socket);
             close(client_socket);
             printf("[INFO]: Child process (PID: %d) closed socket %d and is exiting.\n", getpid(), client_socket);
-            exit(EXIT_SUCCESS);
-            break;
+            _exit(EXIT_SUCCESS);
         default:
             close(client_socket);
             break;
         }
     }
 
-    close(server_socket);
+    if (server_socket_fd != -1) close(server_socket_fd);
     printf("[INFO]: Server terminated successfully!\n");
     return EXIT_SUCCESS;
 }

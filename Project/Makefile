@@ -6,6 +6,7 @@ TARGET   := server
 SRCDIR   := src
 INCDIR   := inc
 OBJDIR   := obj
+DATADIR  := data
 
 SOURCES  := $(wildcard $(SRCDIR)/*.c)
 HEADERS  := $(wildcard $(INCDIR)/*.h)
@@ -34,3 +35,8 @@ run: build
 clear clean:
 	@rm -rf $(OBJDIR) $(TARGET)
 	@echo "🧹 Ambiente Limpo (Objetos e Binários Removidos)."
+
+.PHONY: erase
+erase: clean
+	@rm -rf $(DATADIR)
+	@echo "🔥 Apagamento Total! (Pasta de dados também foi destruída)."

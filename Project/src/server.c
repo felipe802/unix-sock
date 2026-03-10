@@ -16,7 +16,8 @@ static void log_server_addresses(int port) {
     printf("[INFO]: You can access the server clicking on the links below:\n");
 
     if (getifaddrs(&interfaces) != 0) {
-        printf("        -> http://127.0.0.1:%d/\n\n", port);
+        printf("        -> http://127.0.0.1:%d/\n", port);
+        printf("\n[INFO]: Press Ctrl+C or Ctrl+Z to gracefully stop the server.\n\n");
         return;
     }
 
@@ -30,12 +31,12 @@ static void log_server_addresses(int port) {
     }
 
     freeifaddrs(interfaces);
-    printf("\n");
+    printf("\n[INFO]: Press Ctrl+C or Ctrl+Z to gracefully stop the server.\n\n");
 }
 
 int server_init(int port) {
     int server_socket;
-    struct sockaddr_in socket_address;
+    struct sockaddr_in socket_address = {};
     int socket_opt = 1;
 
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -51,7 +52,6 @@ int server_init(int port) {
 
     printf("\n[INFO]: Socket created: %d\n", server_socket);
 
-    memset(&socket_address, 0, sizeof(socket_address));
     socket_address.sin_family = AF_INET;
     socket_address.sin_addr.s_addr = INADDR_ANY;
     socket_address.sin_port = htons(port);

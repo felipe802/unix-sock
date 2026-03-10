@@ -1,0 +1,81 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f1f5f9;
+    height: 100vh;
+}
+
+.app-layout {
+    display: flex;
+    height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    background: #1e293b;
+    color: white;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar h3 { font-size: 1.1em; margin-bottom: 20px; color: #94a3b8; }
+
+#fileList {
+    list-style: none;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+#fileList li {
+    padding: 10px;
+    margin-bottom: 5px;
+    background: #334155;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#fileList li:hover { background: #475569; }
+#fileList li.ativo { background: #3b82f6; font-weight: bold; }
+
+.new-file-box { margin-top: 20px; }
+.new-file-box input { width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: none; }
+
+.editor-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 30px;
+}
+
+h2 { color: #334155; margin-bottom: 20px; }
+#currentFile { color: #3b82f6; }
+
+textarea {
+    flex-grow: 1;
+    padding: 15px;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: monospace;
+    resize: none;
+    margin-bottom: 20px;
+    background: #ffffff;
+}
+
+textarea:disabled { background: #e2e8f0; cursor: not-allowed; }
+
+button {
+    background: #3b82f6; color: white; border: none; padding: 12px;
+    border-radius: 8px; font-weight: bold; cursor: pointer;
+}
+button:hover { background: #2563eb; }
+button:disabled { background: #94a3b8; cursor: not-allowed; }
+
+.status-oculto { display: none; }
+.status-visivel { margin-top: 15px; padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; }
+.sucesso { background: #dcfce7; color: #166534; }
+.erro { background: #fee2e2; color: #991b1b; }
