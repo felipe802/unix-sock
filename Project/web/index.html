@@ -1,24 +1,38 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Principais Ações Ibovespa</title>
+    <title>Jogo da Velha em C</title>
     <link rel="stylesheet" href="css/index.css">
 </head>
+
 <body>
     <div class="container">
-        <h1>📈 Principais Ações Ibovespa</h1>
-        <div class="last-update" id="lastUpdate"></div>
-        <div id="content">
-            <div class="loading">
-                <div class="spinner"></div>
-                Carregando cotações...
+        <h1>❌ Jogo da Velha ⭕</h1>
+
+        <div class="panel">
+            <div class="input-group">
+                <label for="playerName">Seu Nickname:</label>
+                <input type="text" id="playerName" placeholder="Ex: Player1" required>
+            </div>
+            <button class="btn-primary" onclick="criarSala()">➕ Criar Nova Sala</button>
+        </div>
+
+        <div class="panel">
+            <h2>Salas Abertas</h2>
+            <div id="roomList" class="room-grid">
+                <div class="loading">Carregando salas...</div>
             </div>
         </div>
-        <button class="refresh-btn" onclick="loadStocks()">🔄 Atualizar</button>
+
+        <div class="admin-link">
+            <a href="editor" class="btn-secondary">⚙️ Painel Admin</a>
+        </div>
     </div>
 
     <script src="js/index.js"></script>
 </body>
+
 </html>

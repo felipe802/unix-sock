@@ -6,101 +6,148 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <poll.h>
+#include <fcntl.h>
 
 #include "main.h"
 #include "server.h"
 #include "http.h"
 
-static int server_socket_fd = -1;
+static int sig_pipe[2];
 
-static void sigchld_handler(int s) {
-    (void)s;
+static void generic_signal_handler(int signum)
+{
     int saved_errno = errno;
-    int status;
-    pid_t pid;
-
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        printf("[INFO]: Zombie reaped (PID: %d) | Exit Status: %d\n", pid, WEXITSTATUS(status));
-    }
-
+    (void)!write(sig_pipe[1], &signum, sizeof(int));
     errno = saved_errno;
 }
 
-static void sigint_handler(int s) {
-    (void)s;
-    const char msg[] = "\n[INFO]: Signal received. Shutting down server gracefully...\n";
-    (void)!write(STDOUT_FILENO, msg, sizeof(msg) - 1);
-    
-    if (server_socket_fd != -1) {
-        close(server_socket_fd);
+static int setup_self_pipe(void)
+{
+    if (pipe(sig_pipe) == -1)
+    {
+        perror("[ERR]: pipe");
+        return -1;
     }
-    
-    _exit(EXIT_SUCCESS);
+
+    int flags = fcntl(sig_pipe[0], F_GETFL, 0);
+    fcntl(sig_pipe[0], F_SETFL, flags | O_NONBLOCK);
+    flags = fcntl(sig_pipe[1], F_GETFL, 0);
+    fcntl(sig_pipe[1], F_SETFL, flags | O_NONBLOCK);
+
+    struct sigaction sa = {0};
+    sa.sa_handler = generic_signal_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+
+    if (sigaction(SIGINT, &sa, NULL) == -1 ||
+        sigaction(SIGTSTP, &sa, NULL) == -1 ||
+        sigaction(SIGCHLD, &sa, NULL) == -1)
+    {
+        perror("[ERR]: sigaction");
+        return -1;
+    }
+
+    return sig_pipe[0];
 }
 
-static void signal_setup() {
-    struct sigaction sa_chld = {};
-    sa_chld.sa_handler = sigchld_handler;
-    sigemptyset(&sa_chld.sa_mask);
-    sa_chld.sa_flags = SA_RESTART;
-
-    if (sigaction(SIGCHLD, &sa_chld, NULL) == -1) {
-        perror("[ERR]: Error configuring SIGCHLD");
-        exit(EXIT_FAILURE);
-    }
-
-    struct sigaction sa_int = {};
-    sa_int.sa_handler = sigint_handler;
-    sigemptyset(&sa_int.sa_mask);
-    sa_int.sa_flags = 0;
-
-    if (sigaction(SIGINT, &sa_int, NULL) == -1) {
-        perror("[ERR]: Error configuring SIGINT");
-        exit(EXIT_FAILURE);
-    }
-
-    if (sigaction(SIGTSTP, &sa_int, NULL) == -1) {
-        perror("[ERR]: Error configuring SIGTSTP");
-        exit(EXIT_FAILURE);
+static void process_signals(int pipe_read_fd, int *running)
+{
+    int signum;
+    while (read(pipe_read_fd, &signum, sizeof(int)) == sizeof(int))
+    {
+        if (signum == SIGCHLD)
+        {
+            int status;
+            pid_t pid;
+            while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
+            {
+                printf("[INFO]: Zombie reaped (PID: %d)\n", pid);
+            }
+        }
+        else if (signum == SIGINT || signum == SIGTSTP)
+        {
+            printf("\n[INFO]: Shutdown signal received...\n");
+            *running = 0;
+        }
     }
 }
 
-int main() {
-    signal_setup();
-
-    server_socket_fd = server_init(PORT);
-    int client_socket;
+static void accept_and_fork(int server_fd)
+{
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
+    int client_socket = accept(server_fd, (struct sockaddr *)&client_addr, &client_len);
 
-    while ((client_socket = accept(server_socket_fd, (struct sockaddr *)&client_addr, &client_len))) {
-        if (client_socket < 0) {
-            if (errno == EINTR || errno == EBADF) break;
-            perror("[ERR]: Error in accept");
-            continue;
+    if (client_socket < 0)
+    {
+        perror("[ERR]: accept");
+        return;
+    }
+
+    printf("[INFO]: New socket created: %d\n", client_socket);
+
+    switch (fork())
+    {
+    case -1:
+        close(client_socket);
+        perror("[ERR]: fork");
+        break;
+    case 0:
+        close(server_fd);
+        close(sig_pipe[0]);
+        close(sig_pipe[1]);
+        http_handle_client(client_socket);
+        close(client_socket);
+        _exit(EXIT_SUCCESS);
+    default:
+        close(client_socket);
+        break;
+    }
+}
+
+int main()
+{
+    int pipe_read_fd = setup_self_pipe();
+    if (pipe_read_fd == -1)
+        return EXIT_FAILURE;
+
+    int server_fd = server_init(PORT);
+
+    struct pollfd fds[2] = {
+        {.fd = server_fd, .events = POLLIN, .revents = 0},
+        {.fd = pipe_read_fd, .events = POLLIN, .revents = 0}};
+
+    int running = 1;
+
+    while (running)
+    {
+        int poll_result = poll(fds, 2, -1);
+
+        if (poll_result < 0)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            perror("[ERR]: Erro fatal no poll");
+            break;
         }
-        
-        printf("[INFO]: New socket created: %d\n", client_socket);
 
-        switch (fork()) {
-        case -1:
-            close(client_socket);
-            perror("[ERR]: Error creating child process (fork)");
-            break;
-        case 0:
-            close(server_socket_fd);
-            printf("[INFO]: Child process (PID: %d) started handling socket %d.\n", getpid(), client_socket);
-            http_handle_client(client_socket);
-            close(client_socket);
-            printf("[INFO]: Child process (PID: %d) closed socket %d and is exiting.\n", getpid(), client_socket);
-            _exit(EXIT_SUCCESS);
-        default:
-            close(client_socket);
-            break;
+        if (fds[1].revents & POLLIN)
+        {
+            process_signals(pipe_read_fd, &running);
+        }
+
+        if (fds[0].revents & POLLIN)
+        {
+            accept_and_fork(server_fd);
         }
     }
 
-    if (server_socket_fd != -1) close(server_socket_fd);
-    printf("[INFO]: Server terminated successfully!\n");
+    printf("[INFO]: Closing server socket and exiting...\n");
+    close(server_fd);
+    close(sig_pipe[0]);
+    close(sig_pipe[1]);
     return EXIT_SUCCESS;
 }

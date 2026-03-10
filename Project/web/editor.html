@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <title>Gerenciador de Arquivos C</title>
     <link rel="stylesheet" href="css/editor.css">
 </head>
+
 <body>
     <div class="app-layout">
         <aside class="sidebar">
@@ -21,11 +23,15 @@
         <main class="editor-area">
             <h2>Editando: <span id="currentFile">Nenhum arquivo selecionado</span></h2>
             <textarea id="meuEditor" disabled placeholder="Selecione ou crie um arquivo na lateral..."></textarea>
-            <button id="btnSalvar" disabled>Salvar Arquivo</button>
+            <div class="actions">
+                <button id="btnSalvar" disabled>Salvar Arquivo</button>
+                <button id="btnExcluir" disabled class="btn-danger">Excluir Arquivo</button>
+            </div>
             <div id="statusMensagem" class="status-oculto"></div>
         </main>
     </div>
 
     <script src="js/editor.js"></script>
 </body>
+
 </html>

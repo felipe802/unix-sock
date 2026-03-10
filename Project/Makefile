@@ -39,4 +39,4 @@ clear clean:
 .PHONY: erase
 erase: clean
 	@rm -rf $(DATADIR)
-	@echo "🔥 Apagamento Total! (Pasta de dados também foi destruída)."
+	@echo "🔥 Apagamento Total! (Pasta de Dados também foi Destruída)."

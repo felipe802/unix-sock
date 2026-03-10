@@ -1,65 +1,65 @@
-# 💻 **Implementação: Servidor HTTP/1.1 Concorrente em C (POSIX)**
+# 💻 **Implementação: Servidor HTTP/1.1 RESTful em C (POSIX / FreeBSD & Linux)**
 
 ## 🎯 **Arquitetura e Objetivo Técnico (V1)**
- Implementação de um servidor web robusto em **C puro**, operando diretamente sobre a API padrão de **Berkeley Sockets**. Este projeto foi projetado com foco em **portabilidade UNIX**, garantindo plena compatibilidade tanto com ambientes **FreeBSD** quanto **Linux**.
+ Implementação de um servidor web e API REST robusta em **C puro (C23)**, operando diretamente sobre a API padrão de **Berkeley Sockets**. Este projeto foi desenhado com foco estrito em **portabilidade UNIX (POSIX)**, garantindo compilação e execução nativa e impecável tanto em ambientes **FreeBSD** quanto **Linux**.
 
- O objetivo primário desta versão é a exploração aprofundada da pilha TCP/IP, protocolos da Camada de Aplicação (HTTP/1.1) e a interface padrão POSIX, sem depender de chamadas de sistema proprietárias ou específicas de um único Kernel.
+ O objetivo primário é a exploração aprofundada da pilha TCP/IP, protocolos da Camada de Aplicação (HTTP/1.1) e as armadilhas clássicas de I/O e concorrência no nível do SO, adotando o padrão de *Clean Architecture* e *Zero-Copy Parsing*.
 
-### ⚙️ **Modelo de Concorrência: POSIX Fork-per-Request**
- Para garantir que múltiplas requisições de rede sejam atendidas simultaneamente sem bloqueio de I/O, o servidor adota a system call UNIX padrão `fork()`.
+### ⚙️ **Modelo de Concorrência: Fork-per-Request & Sincronismo via Self-Pipe Trick**
+ Para garantir que múltiplas requisições de rede sejam atendidas simultaneamente sem bloqueio de I/O, o servidor adota a system call UNIX padrão `fork()`, aliada a um sofisticado controle de estado:
 
- * **Isolamento de Falhas e Segurança:** Cada conexão de cliente é delegada a um processo filho isolado em seu próprio espaço de endereçamento de memória.
- * **Portabilidade de Escalonamento:** O processo daemon principal dedica-se exclusivamente ao loop de `accept()`. O escalonamento dos processos filhos é delegado ao *Scheduler* genérico do sistema operacional hospedeiro (seja o ULE no FreeBSD ou o CFS no Linux).
- * **Gestão de Recursos:** Implementação rigorosa de handlers genéricos para `SIGCHLD` para prevenir o acúmulo de processos zumbis (Defunct) e garantir o recolhimento adequado da memória.
+ * **Isolamento de Falhas (Workers):** Cada conexão de cliente é delegada a um processo filho isolado em seu próprio espaço de memória, protegendo o daemon principal contra falhas críticas.
+ * **O "Self-Pipe Trick" e `poll()`:** Para superar a limitação assíncrona perigosa dos tratadores de sinais POSIX (`sigaction`), o servidor utiliza o lendário *Self-Pipe Trick*. Sinais do Kernel (como `SIGCHLD` e `SIGINT`) são capturados e imediatamente injetados num `pipe` local não-bloqueante. O daemon principal utiliza a chamada `poll()` para multiplexar, monitorando **simultaneamente e de forma síncrona** a chegada de novos clientes (sockets) e a chegada de sinais (pipe).
+ * **Resiliência a `EINTR`:** O loop de eventos é desenhado para suportar e ignorar *Interrupted System Calls* geradas por interrupções do Kernel, garantindo uptime ininterrupto.
 
-### ⏱️ **Ciclo de Vida da Conexão e Syscalls POSIX**
- O diagrama abaixo ilustra a segregação de responsabilidades entre o Daemon Principal, o Kernel e o Processo Filho recém-criado, demonstrando a gestão dos *File Descriptors* de rede.
+### ⏱️ **Ciclo de Vida da Conexão e Event Loop**
+ O diagrama abaixo ilustra a segregação de responsabilidades entre o Daemon Principal, o Kernel e os Processos Filhos, demonstrando o fluxo síncrono do *Self-Pipe Trick*.
 
  ```mermaid
  sequenceDiagram
-     participant C as HTTP Client (Browser)
-     participant M as Master Daemon
-     participant OS as OS Kernel (Scheduler)
-     participant W as Child Process (Fork)
-    
-     M->>M: socket(), bind(), listen()
+     participant C as HTTP Client
+     participant M as Master (poll)
+     participant P as Self-Pipe
+     participant OS as Kernel UNIX
+     participant W as Child Worker
+
+     M->>P: setup pipe() & sigaction()
      loop Main Event Loop
-         M->>OS: Blocked on accept()
-         C->>OS: TCP 3-Way Handshake
-         OS-->>M: accept() returns client_fd
-         M->>OS: syscall: fork()
-         OS-->>M: returns Child PID (> 0)
-         OS-->>W: returns 0 (is Child)
-        
-         Note over M: Processo Pai
-         M->>M: close(client_fd)
-        
-         Note over W: Processo Filho Isolado
-         W->>W: close(server_fd)
-         C->>W: HTTP Request payload
-         W->>W: Parse Headers (FSM)
-         W->>W: File I/O (fread)
-         W->>C: HTTP/1.1 200 OK + Body
-         W->>W: close(client_fd)
-         W->>OS: syscall: exit(0)
-        
-         OS->>M: SIGNAL: SIGCHLD
-         M->>OS: waitpid(WNOHANG)
-         Note over M: Zombie Reaped! Memória liberada.
+         M->>OS: poll(server_fd, pipe_read_fd)
+
+         alt Novo Cliente HTTP
+             C->>OS: TCP 3-Way Handshake
+             OS-->>M: POLLIN no server_fd
+             M->>W: fork() (Clone de memória)
+             Note over W: Worker Isolado
+             W->>C: Zero-Copy HTTP Parse & API Roteamento
+             W->>C: HTTP/1.1 Resposta (Static ou JSON)
+             W->>OS: _exit(0)
+
+         else Sinal Assíncrono (Worker Morreu)
+             OS->>M: Kernel emite SIGCHLD
+             Note over M: Signal Handler
+             M->>P: write(pipe_write_fd, SIGCHLD)
+             OS-->>M: POLLIN no pipe_read_fd
+             M->>P: read() consome sinal do cano
+             M->>OS: waitpid(WNOHANG) -> Zombie Reaped!
+         end
      end
  ```
 
-## ⚡ **Definição dos Métodos Suportados**
+## ⚡ **Definição dos Métodos RESTful Suportados**
+ O servidor atua como um back-end *Stateless*, mapeando os verbos HTTP para operações atômicas no diretório `/data/`.
+
  | Método | Comportamento no Servidor | Finalidade Técnica |
  | --- | --- | --- |
- | **GET** | Leitura via I/O padrão (`fread`) | Recuperação de recursos estáticos do diretório raiz. |
- | **POST** | Processamento de buffers de entrada | Submissão de dados para criação de novos estados ou recursos. |
- | **PUT** | Escrita integral de arquivos | Atualização completa de um recurso em uma URI específica. |
- | **PATCH** | Modificação atômica parcial | Atualização segmentada de recursos existentes. |
- | **DELETE** | Remoção via syscall `unlink` | Exclusão definitiva de um recurso no sistema de arquivos. |
+ | **GET** | Leitura via I/O padrão (`fread`) | Recuperação de recursos estáticos ou serialização de diretórios em JSON. |
+ | **POST** | Criação via `fopen(..., "w")` | Processamento de buffers e criação integral de novos estados/recursos. |
+ | **PUT** | Escrita integral e Idempotente | Substituição completa de um recurso existente numa URI específica. |
+ | **PATCH** | Modificação via `fopen(..., "a")` | Atualização parcial, anexando novos dados (*append*) ao final do recurso. |
+ | **DELETE** | Remoção via syscall `remove()` | Exclusão definitiva de um recurso de dados no sistema de arquivos. |
 
 ## 🔨 **Compilação e Deploy**
- O gerenciamento de build é feito via Makefile, configurado para o compilador **GCC**, garantindo padronização entre os ambientes FreeBSD e Linux. Requer suporte ao padrão C23.
+ O projeto utiliza um `.editorconfig` para padronização global (LF, UTF-8, Trailing Whitespaces) e é gerenciado via `Makefile`. O compilador **GCC** é exigido com suporte estrito ao padrão C23 (`-std=c23`) e proteções de memória (`-Wall -Wextra`).
 
  ```sh
  make clear
@@ -70,8 +70,8 @@
 ---
 
 ## 🚀 **Roadmap e Evolução Arquitetural (Versão 2)**
- Embora a V1 foque em portabilidade e nos fundamentos de redes (Sockets e POSIX), a arquitetura foi desenhada para permitir uma futura evolução visando **Alta Performance Absoluta (High Concurrency)**. A Versão 2 focará na exploração aprofundada das otimizações nativas do Kernel do **FreeBSD**:
+ Embora a V1 foque em portabilidade máxima e nos fundamentos POSIX raiz, a arquitetura foi desenhada para permitir uma evolução visando **Alta Performance Absoluta (High Concurrency)**. A Versão 2 abraçará as otimizações nativas de Kernel:
 
- 1. **I/O Assíncrono Orientado a Eventos:** Migração do modelo `fork()` para multiplexação de I/O de alta performance utilizando a API `kqueue`/`kevent` do FreeBSD (escalando conexões simultâneas em complexidade $O(1)$ ativo).
- 2. **Zero-Copy I/O:** Substituição do `fread` pela system call `sendfile()`, permitindo a transferência direta de dados do cache de página do Kernel para o buffer do socket de rede, contornando o overhead do *User Space*.
- 3. **Multithreading:** Implementação de um *Thread Pool* (pthreads) aliado ao `kqueue` para processamento escalável em arquiteturas multicore, eliminando o custo de *context switch* de processos completos.
+ 1. **I/O Assíncrono Direto (O(1)):** Substituição do modelo híbrido `poll`/`fork()` para multiplexação massiva utilizando **`kqueue`/`kevent**` no FreeBSD (ou `epoll` no Linux), eliminando a necessidade do *Self-Pipe Trick*.
+ 2. **Zero-Copy Transfer:** Evolução do parser atual para a utilização da system call nativa **`sendfile()`**, roteando os bytes estáticos do cache do Kernel diretamente para a NIC (Placa de Rede).
+ 3. **Multithreading:** Implementação de um *Thread Pool* (pthreads) acoplado ao `kqueue` para processamento escalável em CPUs multicore, abolindo o custo do *context switch* de processos completos.

@@ -6,27 +6,21 @@ document.getElementById('meuFormulario').addEventListener('submit', function(eve
     const boxResposta = document.getElementById('respostaServidor');
     const botao = document.querySelector('button');
 
-    // Estado de carregamento no botão
     botao.textContent = 'Enviando...';
     botao.disabled = true;
 
-    const dadosParaEnviar = "conteudo=" + encodeURIComponent(textoDigitado);
-
-    // Seu servidor C está configurado para responder qualquer POST
-    fetch('/enviar-dados', {
+    fetch('/api/data/mensagem.txt', {
         method: 'POST', 
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'text/plain'
         },
-        body: dadosParaEnviar
+        body: textoDigitado
     })
     .then(resposta => resposta.text())
     .then(texto => {
-        // Mostra a resposta e estiliza
         boxResposta.innerText = texto;
         boxResposta.className = 'resposta-visivel';
         
-        // Limpa o input e restaura o botão
         inputMensagem.value = '';
         botao.textContent = 'Enviar via POST';
         botao.disabled = false;

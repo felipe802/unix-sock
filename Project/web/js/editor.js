@@ -2,6 +2,7 @@ const fileList = document.getElementById('fileList');
 const editor = document.getElementById('meuEditor');
 const currentFileSpan = document.getElementById('currentFile');
 const btnSalvar = document.getElementById('btnSalvar');
+const btnExcluir = document.getElementById('btnExcluir');
 const btnNovo = document.getElementById('btnNovo');
 const inputNovo = document.getElementById('newFileName');
 const statusMsg = document.getElementById('statusMensagem');
@@ -35,6 +36,7 @@ function abrirArquivo(nomeArquivo) {
     
     editor.disabled = false;
     btnSalvar.disabled = false;
+    btnExcluir.disabled = false;
     editor.placeholder = "Carregando...";
 
     fetch('/api/data/' + nomeArquivo)
@@ -65,7 +67,7 @@ btnSalvar.onclick = () => {
     btnSalvar.disabled = true;
 
     fetch('/api/data/' + arquivoAtual, {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'text/plain' },
         body: editor.value
     })
@@ -76,6 +78,29 @@ btnSalvar.onclick = () => {
     .finally(() => {
         btnSalvar.textContent = 'Salvar Arquivo';
         btnSalvar.disabled = false;
+    });
+};
+
+btnExcluir.onclick = () => {
+    if (!arquivoAtual || !confirm(`Tem certeza que deseja excluir ${arquivoAtual}?`)) return;
+    
+    btnExcluir.disabled = true;
+
+    fetch('/api/data/' + arquivoAtual, { method: 'DELETE' })
+    .then(res => {
+        if(res.ok) {
+            arquivoAtual = null;
+            currentFileSpan.textContent = "Nenhum arquivo selecionado";
+            editor.value = "";
+            editor.disabled = true;
+            btnSalvar.disabled = true;
+            btnExcluir.disabled = true;
+            mostrarStatus("Excluído com sucesso!", "sucesso");
+            carregarListaArquivos();
+        } else {
+            mostrarStatus("Erro ao excluir.", "erro");
+            btnExcluir.disabled = false;
+        }
     });
 };
 
