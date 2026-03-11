@@ -7,28 +7,12 @@
 
  1. **O Modelo OSI na Prática:** A transição do fluxo de bytes brutos da Camada 4 (TCP) para o protocolo semântico da Camada 7 (HTTP), lidando com fragmentação de pacotes, reconstrução de *streams* e latência.
  2. **Gerenciamento de Estado sem Garbage Collector:** Como alocar, rastrear e liberar memória (buffers de requisição e resposta) em um ambiente de alta concorrência sem introduzir *Memory Leaks* ou *Use-After-Free*.
- 3. **A Evolução da Concorrência:** O projeto está estruturado em uma jornada arquitetural clara. Começamos estabelecendo uma base sólida com as regras universais do UNIX (Versão 1 - POSIX Multiprocesso) para, em seguida, quebrarmos essas regras em busca de performance extrema utilizando APIs específicas de Kernel (Versão 2 - Event-Driven/kqueue).
-
----
-
-# 🎯 **O Projeto (Versão 1 - Portabilidade e Sincronismo)**
- Esta primeira iteração foca na construção de um servidor web robusto, determinístico e portável. A implementação utiliza a **API de Sockets de Berkeley** genérica (POSIX) e operações de I/O padrão, garantindo que o código rode nativamente tanto em **FreeBSD** quanto em **Linux**.
-
- A grande inovação técnica desta versão é o uso do **Self-Pipe Trick**, que permite tratar sinais assíncronos (como a morte de processos filhos) de forma síncrona dentro de um loop de eventos, eliminando condições de corrida clássicas em C. O servidor serve como base para uma aplicação de **Jogo da Velha Multiplayer**, sincronizando o estado via JSON.
-
-## ⚡ **Definição dos Métodos Suportados**
- | Método | Comportamento no Servidor | Finalidade Técnica |
- | --- | --- | --- |
- | **GET** | Leitura via I/O padrão (`fread`) | Recuperação de recursos estáticos ou estado JSON da sala. |
- | **POST** | Escrita integral (`fopen "w"`) | Criação de novos estados (ex: abrir uma nova sala). |
- | **PUT** | Escrita Idempotente | Atualização completa de um recurso (ex: realizar uma jogada). |
- | **PATCH** | Modificação atômica parcial | Atualização segmentada de recursos existentes. |
- | **DELETE** | Remoção via syscall `remove` | Exclusão definitiva de um recurso (ex: fechar uma sala). |
+ 3. **A Evolução da Concorrência:** O estudo propõe uma jornada arquitetural clara. A base teórica começa com a compreensão das regras universais do UNIX (modelos POSIX tradicionais) para, em seguida, explorar a quebra dessas regras em busca de performance extrema utilizando APIs assíncronas e específicas de Kernel (como Event-Driven/kqueue).
 
 ---
 
 # 😈 **O Ambiente de Desenvolvimento: Por que FreeBSD?**
- Embora o servidor na Versão 1 seja multiplataforma, o **FreeBSD** foi escolhido como o ecossistema primário de pesquisa, arquitetura e validação. Para engenharia de software de baixo nível (Systems Programming), o FreeBSD oferece vantagens estruturais e ferramentas analíticas que superam alternativas tradicionais.
+ Embora os conceitos teóricos abordados sejam amplamente multiplataforma, o **FreeBSD** foi escolhido como o ecossistema primário de pesquisa, arquitetura e validação. Para engenharia de software de baixo nível (Systems Programming), o FreeBSD oferece vantagens estruturais e ferramentas analíticas que superam alternativas tradicionais.
 
 ## 📜 **1. A Origem Histórica: O Berço dos Sockets**
  O **BSD (Berkeley Software Distribution)** foi o laboratório onde a pilha TCP/IP moderna foi forjada. A **API de Sockets**, adotada universalmente hoje, foi introduzida no **4.2BSD** em 1983. Desenvolver sobre o FreeBSD é trabalhar na implementação "de referência" das redes UNIX.
@@ -41,95 +25,11 @@
 ## 🔬 **3. Observabilidade Absoluta com DTrace**
  Para construir servidores de alta performance, "achismo" não funciona. O FreeBSD integra nativamente o **DTrace (Dynamic Tracing Framework)**. Ele permite instrumentar e rastrear o servidor em tempo real e em produção, mapeando exatamente quantos milissegundos o Kernel gasta alocando buffers de rede (mbufs), realizando trocas de contexto (*context switches*) no `fork()`, ou travando em operações de I/O de disco, sem precisar alterar uma linha de código C ou recompilar o servidor.
 
-## 🛡️ **4. Paradigmas Superiores de Arquitetura (Roadmap V2)**
+## 🛡️ **4. Paradigmas Superiores de Arquitetura**
  O FreeBSD expõe primitivas de Kernel consideradas o estado da arte para escalabilidade e segurança de rede:
 
  * **kqueue vs epoll:** O `kqueue` do FreeBSD não monitora apenas Sockets de rede, mas unifica o monitoramento de processos (`SIGCHLD`), timers, I/O assíncrono e eventos de sistema de arquivos (vnodes) em uma única API elegante.
  * **Segurança Ofensiva/Defensiva (Capsicum):** Enquanto containers dependem de namespaces complexos, o FreeBSD permite que um servidor drope seus próprios privilégios e entre em um "Capability Mode" (`Capsicum`). Se um atacante explorar um *Buffer Overflow* na função de *parsing* HTTP deste servidor, o *Capsicum* bloqueará fisicamente no Kernel qualquer tentativa de abrir novos arquivos ou sockets maliciosos.
-
----
-
-# 🚀 **Destaques da Implementação Técnica (V1)**
- Para garantir resiliência e portabilidade, o servidor foi construído sobre uma arquitetura de **Event Loop Síncrono** mesmo utilizando multiprocessamento.
-
-## ⚡ **Gerenciamento de Concorrência: Self-Pipe Trick + poll()**
- * **Self-Pipe Trick:** Sinais UNIX são inerentemente assíncronos e perigosos. Para domá-los, o servidor cria um `pipe()` interno. O tratador de sinais (`SIGCHLD`) apenas escreve um byte no cano.
- * **Loop Unificado:** O daemon principal utiliza `poll()` para monitorar simultaneamente o socket do servidor e a ponta de leitura do `pipe`. Isso transforma interrupções de hardware em eventos de I/O síncronos.
- * **Isolamento via Fork:** Cada conexão é processada por um worker isolado. Se um processo filho falha, o Kernel emite o sinal, o `poll()` detecta o evento no cano e o pai realiza o `waitpid()` (reaping) de forma limpa, sem nunca bloquear.
-
-### 🗺️ **Arquitetura de Concorrência Síncrona**
- ```mermaid
- sequenceDiagram
-     participant C as Cliente HTTP
-     participant M as Master Daemon (poll)
-     participant P as Self-Pipe (Internal)
-     participant OS as Kernel (POSIX)
-     participant W as Worker (Fork)
-
-     M->>P: setup pipe() & sigaction()
-     loop Event Loop
-         M->>OS: poll(server_fd, pipe_read_fd)
-
-         alt Novo Cliente (Rede)
-             OS-->>M: POLLIN no server_fd
-             M->>W: syscall: fork()
-             W->>C: Zero-Copy Parsing & Response
-             W->>OS: _exit(0)
-
-         else Sinal (Worker Morreu)
-             OS->>M: Envia SIGCHLD
-             M->>P: write(pipe_write_fd, signo)
-             OS-->>M: POLLIN no pipe_read_fd
-             M->>P: read() consome sinal do cano
-             M->>OS: waitpid(WNOHANG) -> Zombie Reaped!
-         end
-     end
- ```
-
-## 🧩 **Parsing de Protocolo Zero-Copy (In-situ)**
- * **Mecânica de Memória:** O parser opera diretamente no buffer da pilha. Delimitadores HTTP (`\r\n`, espaços, `?`) são substituídos por terminadores nulos (`\0`).
- * **Otimização de Ponteiros:** A estrutura `http_request_t` mapeia seus ponteiros de caminho, versão e cabeçalhos diretamente para os endereços dentro do buffer original, eliminando `malloc` ou duplicação de strings.
-
----
-
-# 🔮 **Roadmap e Evolução Arquitetural (Versão 2)**
- A Versão 2 abandonará a portabilidade POSIX básica para abraçar a performance extrema "bare-metal", focando em escalabilidade horizontal.
-
-### **Proposta Técnica V2: Event-Driven & Zero-Copy I/O**
- ```mermaid
- graph TD
-     subgraph "Kernel Space"
-         K_NET[Network Stack]
-         K_SIG[Signals]
-         K_FS[Filesystem Cache]
-     end
-
-     subgraph "V2 Engine (User Space)"
-         EP[Event Multiplexer: kqueue / epoll]
-         TQ[Task Queue]
-
-         subgraph "Thread Pool"
-             T1[Thread 1]
-             T2[Thread 2]
-             TN[Thread N]
-         end
-     end
-
-     K_NET -- "O(1) Event" --> EP
-     K_SIG -- "Signal Event" --> EP
-     EP -- "Dispatch" --> TQ
-     TQ -- "Pop" --> T1
-
-     T1 -- "syscall: sendfile()" --> K_FS
-     K_FS -- "Direct DMA" --> K_NET
-
-     style EP fill:#3b82f6,stroke:#fff,color:#fff
-     style TQ fill:#1e293b,stroke:#fff,color:#fff
- ```
-
- 1. **I/O Multiplexing (kqueue/kevent):** Substituição do modelo `fork()` por um loop de eventos único no FreeBSD, permitindo milhares de conexões simultâneas com custo de memória quase nulo.
- 2. **Zero-Copy I/O (`sendfile`):** Uso da syscall `sendfile(2)` para transferir arquivos diretamente do Page Cache para o buffer do socket, saltando o espaço de usuário.
- 3. **Thread Pooling:** Transição para threads persistentes, eliminando o custo de criação de processos e reduzindo o *Context Switching*.
 
 ---
 
@@ -177,8 +77,8 @@
 ## ⚙️ **Scripts de Configuração**
  Scripts utilitários localizados na pasta [`./FreeBSD/Scripts/`](./FreeBSD/Scripts/) para auxiliar na preparação do ambiente.
 
- * **[`install.sh`](./FreeBSD/Scripts/install.sh)**: Script para instalação das dependências (GCC, Gmake) e compilação do projeto.
+ * **[`install.sh`](./FreeBSD/Scripts/install.sh)**: Script para a preparação das ferramentas essenciais de análise e configuração do ambiente.
  * **[`setup.sh`](./FreeBSD/Scripts/setup.sh)**: Script para configuração inicial do ambiente (variáveis e permissões).
  * **[`connect.sh`](./FreeBSD/Scripts/connect.sh)**: Script para testes de conectividade e sockets.
  * **[`download.sh`](./FreeBSD/Scripts/download.sh)**: Script para baixar recursos adicionais ou PDFs atualizados.
- * **[`uninstall.sh`](./FreeBSD/Scripts/uninstall.sh)**: Script para limpeza completa de dependências e binários.
+ * **[`uninstall.sh`](./FreeBSD/Scripts/uninstall.sh)**: Script para limpeza e reset do ambiente de estudo.
