@@ -1,4 +1,5 @@
 # 🌐 **Projeto: Implementação de um Web Server HTTP Concorrente (C/POSIX)**
+ Bem-vindo a este repositório de pesquisa e estudo em Engenharia de Sistemas. O foco aqui não é entregar um produto "pronto para produção", mas documentar, explorar e compreender a anatomia de um servidor HTTP concorrente escrito inteiramente em C, interagindo diretamente com as APIs do sistema operacional. Este é um espaço dedicado à investigação técnica sobre como as redes e os sistemas realmente operam por baixo dos panos.
 
 ## 🧠 **A Filosofia e o Desafio Arquitetural**
  No ecossistema de desenvolvimento moderno, a comunicação de rede é frequentemente ofuscada por pesadas abstrações (frameworks web, reverse proxies, runtimes gerenciados). O objetivo primário deste projeto não é competir com o Nginx ou Apache, mas sim **desconstruir a abstração**.
@@ -14,18 +15,18 @@
 # 😈 **O Ambiente de Desenvolvimento: Por que FreeBSD?**
  Embora os conceitos teóricos abordados sejam amplamente multiplataforma, o **FreeBSD** foi escolhido como o ecossistema primário de pesquisa, arquitetura e validação. Para engenharia de software de baixo nível (Systems Programming), o FreeBSD oferece vantagens estruturais e ferramentas analíticas que superam alternativas tradicionais.
 
-## 📜 **1. A Origem Histórica: O Berço dos Sockets**
+## 📜 **A Origem Histórica: O Berço dos Sockets**
  O **BSD (Berkeley Software Distribution)** foi o laboratório onde a pilha TCP/IP moderna foi forjada. A **API de Sockets**, adotada universalmente hoje, foi introduzida no **4.2BSD** em 1983. Desenvolver sobre o FreeBSD é trabalhar na implementação "de referência" das redes UNIX.
 
  > **Referência Oficial:** [FreeBSD Developers Handbook - Sockets Programming](https://docs.freebsd.org/en/books/developers-handbook/sockets/)
 
-## 🏗️ **2. O "Base System" Coeso**
+## 🏗️ **O "Base System" Coeso**
  Diferente do Linux, que é apenas um Kernel combinado com utilitários GNU de terceiros, o FreeBSD desenvolve o Kernel, a biblioteca padrão C (`libc`) e as ferramentas de *User Space* como um **único repositório coeso (Base System)**. Isso significa que o comportamento das *syscalls*, a implementação da memória e a documentação estão sempre em perfeita sincronia, eliminando a ambiguidade comum ao se debugar problemas profundos de integração.
 
-## 🔬 **3. Observabilidade Absoluta com DTrace**
+## 🔬 **Observabilidade Absoluta com DTrace**
  Para construir servidores de alta performance, "achismo" não funciona. O FreeBSD integra nativamente o **DTrace (Dynamic Tracing Framework)**. Ele permite instrumentar e rastrear o servidor em tempo real e em produção, mapeando exatamente quantos milissegundos o Kernel gasta alocando buffers de rede (mbufs), realizando trocas de contexto (*context switches*) no `fork()`, ou travando em operações de I/O de disco, sem precisar alterar uma linha de código C ou recompilar o servidor.
 
-## 🛡️ **4. Paradigmas Superiores de Arquitetura**
+## 🛡️ **Paradigmas Superiores de Arquitetura**
  O FreeBSD expõe primitivas de Kernel consideradas o estado da arte para escalabilidade e segurança de rede:
 
  * **kqueue vs epoll:** O `kqueue` do FreeBSD não monitora apenas Sockets de rede, mas unifica o monitoramento de processos (`SIGCHLD`), timers, I/O assíncrono e eventos de sistema de arquivos (vnodes) em uma única API elegante.
@@ -53,6 +54,28 @@
  | **FreeBSD Handbook** | [📄 **Visualizar PDF](https://download.freebsd.org/doc/en/books/handbook/handbook_en.pdf)** | [📥 **Baixar Página](https://download.freebsd.org/doc/en/books/handbook/handbook_en.tar.gz)** |
  | **Developers Handbook** | [📄 **Visualizar PDF](https://download.freebsd.org/doc/en/books/developers-handbook/developers-handbook_en.pdf)** | [📥 **Baixar Página](https://download.freebsd.org/doc/en/books/developers-handbook/developers-handbook_en.tar.gz)** |
  | **FreeBSD FAQ** | [📄 **Visualizar PDF](https://download.freebsd.org/doc/en/books/faq/faq_en.pdf)** | [📥 **Baixar Página](https://download.freebsd.org/doc/en/books/faq/faq_en.tar.gz)** |
+
+---
+
+# 🗺️ **Mapa do Repositório: Teoria e Prática**
+ Este repositório é dividido em três pilares fundamentais: o ambiente, a pesquisa teórica e a implementação nua e crua.
+
+## 📚 **A Fundação e o Ecossistema ([`/FreeBSD`](./FreeBSD))**
+ O laboratório de testes e a fonte da verdade.
+ * **[`/Books`](./FreeBSD/Books/):** Cópias locais em PDF da documentação oficial do FreeBSD (Handbook, Architecture, Developers).
+ * **[`/Scripts`](./FreeBSD/Scripts/):** Ferramentas para preparação, limpeza e testes do ambiente de estudo (`setup.sh`, `connect.sh`, etc).
+
+## 🧠 **O Acervo de Pesquisa Arquitetural ([`/Learn`](./Learn))**
+ Antes de escrever código, é preciso entender a física e a filosofia das redes. Este diretório contém nossos ensaios e a engenharia de conhecimento do projeto.
+ * **[`/Prompts`](./Learn/Prompts/):** O coração da nossa pesquisa. Contém matrizes de "Engenharia de Prompts" rigorosas e inflexíveis, criando personas (como *Arqueólogo de Software* e *Engenheiro de Data Path*) para extrair o conhecimento mais denso possível sobre sistemas e redes.
+ * **[`/Markdown`](./Learn/Markdown/):** Os ensaios técnicos exaustivos gerados. Tratados profundos descendo até o nível do silício sobre o Modelo OSI, Zero-Copy (Bypass de Kernel), TCP/UDP, endereçamento L2/L3 e a anatomia dos Kernels UNIX.
+ * **[`/Summary`](./Learn/Summary/):** Sínteses e esquemas para revisão rápida de conceitos densos.
+
+## 💻 **A Implementação Bare-Metal ([`/Project`](./Project))**
+ Onde a teoria encontra a dura realidade dos ponteiros, *file descriptors* e alocação de memória em C puro.
+ * **[`/src`](./Project/src) e [`/inc`](./Project/inc):** O núcleo do Web Server. Implementação bruta do *parser* HTTP, rotinas de rede, gerenciamento do *event loop* de sockets e a lógica da API.
+ * **[`/web`](./Project/web/):** O front-end estático (HTML, CSS, JS) contendo a interface de testes que é nativamente servida e gerenciada pelo próprio servidor C.
+ * **[`Makefile`](./Project/Makefile):** As diretivas de compilação sem abstrações.
 
 ---
 
