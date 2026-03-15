@@ -13,23 +13,31 @@
 #include "server.h"
 #include "http.h"
 
-static int sig_pipe[2];
+static int sig_pipe[2]; // Um tubo é apenas um array de 2 números inteiros
+// O índice 0 é a boca de leitura, o 1 é a boca de escrita
 
-static void generic_signal_handler(int signum)
-{
+// O SO interrompe tudo para rodar isso. Deve ser rápido e seguro
+static void generic_signal_handler(int signum) {
+    // Salvamos o código de erro global para não atrapalhar alguma
+    // outra função que estava rodando antes da interrupção
     int saved_errno = errno;
+    
+    // Escrevemos o número do sinal que recebemos dentro do tubo
+    // Como colocar um bilhete dizendo que o sinal chegou
     (void)!write(sig_pipe[1], &signum, sizeof(int));
-    errno = saved_errno;
+    errno = saved_errno; // Restauramos o estado
 }
 
-static int setup_self_pipe(void)
-{
-    if (pipe(sig_pipe) == -1)
-    {
+// Configuração do tubo e sinais
+static int setup_self_pipe(void) {
+    // pipe() pede ao SO para criar o tubo de comunicação na memória 
+    if (pipe(sig_pipe) == -1) {
         perror("[ERR]: pipe");
         return -1;
     }
 
+    // Aqui o tubo é transformado em não-bloqueante
+    // 
     int flags = fcntl(sig_pipe[0], F_GETFL, 0);
     fcntl(sig_pipe[0], F_SETFL, flags | O_NONBLOCK);
     flags = fcntl(sig_pipe[1], F_GETFL, 0);

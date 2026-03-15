@@ -1,4 +1,4 @@
-CC       := gcc
+CC       := clang
 CFLAGS   := -Wall -Wextra -Werror -std=c23 -O2
 CPPFLAGS := -I./inc -D_POSIX_C_SOURCE=202405L
 TARGET   := server
