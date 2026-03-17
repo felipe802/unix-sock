@@ -40,20 +40,25 @@
 ## 🔎 **Consulta Online (Web)**
  *Melhor para busca indexada e navegação rápida entre capítulos.*
 
- * **[FreeBSD Books](https://docs.freebsd.org/en/books/)**: O hub central para livros e artigos técnicos.
- * **[FreeBSD Handbook](https://docs.freebsd.org/en/books/handbook/)**: O "guia definitivo" para instalação e administração.
- * **[FreeBSD Developers Handbook](https://docs.freebsd.org/en/books/developers-handbook/)**: Essencial para **programação de sockets**, chamadas de sistema e arquitetura do kernel.
- * **[FreeBSD FAQ](https://docs.freebsd.org/en/books/faq/)**: Respostas para as dúvidas mais comuns sobre o SO.
- * **[FreeBSD Manual Pages](https://man.freebsd.org/)**: Referência direta de comandos e funções da biblioteca C.
+ 📚 **Hub Central:** **[FreeBSD Books](https://docs.freebsd.org/en/books/)** — Acesse a biblioteca completa de livros e artigos técnicos.
+
+ | Recurso | Tipo | Descrição | Link |
+ | :--- | :--- | :--- | :--- |
+ | **FreeBSD Handbook** | Guia | O "guia definitivo" para instalação e administração. | [🌐 **Acessar**](https://docs.freebsd.org/en/books/handbook/) |
+ | **Developers Handbook** | Guia | Essencial para **programação de sockets**, chamadas de sistema e arquitetura do kernel. | [🌐 **Acessar**](https://docs.freebsd.org/en/books/developers-handbook/) |
+ | **FreeBSD FAQ** | FAQ | Respostas para as dúvidas mais comuns sobre o SO. | [🌐 **Acessar**](https://docs.freebsd.org/en/books/faq/) |
+ | **Manual Pages** | Manual | Referência direta de comandos e funções da biblioteca C. | [🌐 **Acessar**](https://man.freebsd.org/) |
 
 ## 📥 **Download Offline (PDF)**
  *Ideal para ambientes isolados (air-gapped) ou leitura focada sem distrações.*
 
+ 🗂️ **Diretório Completo:** **[FreeBSD Books Archive](https://download.freebsd.org/doc/en/books/)** — Repositório raiz com todos os arquivos para download.
+
  | Recurso | Download PDF | Download Página |
- | --- | --- | --- |
- | **FreeBSD Handbook** | [📄 **Visualizar PDF](https://download.freebsd.org/doc/en/books/handbook/handbook_en.pdf)** | [📥 **Baixar Página](https://download.freebsd.org/doc/en/books/handbook/handbook_en.tar.gz)** |
- | **Developers Handbook** | [📄 **Visualizar PDF](https://download.freebsd.org/doc/en/books/developers-handbook/developers-handbook_en.pdf)** | [📥 **Baixar Página](https://download.freebsd.org/doc/en/books/developers-handbook/developers-handbook_en.tar.gz)** |
- | **FreeBSD FAQ** | [📄 **Visualizar PDF](https://download.freebsd.org/doc/en/books/faq/faq_en.pdf)** | [📥 **Baixar Página](https://download.freebsd.org/doc/en/books/faq/faq_en.tar.gz)** |
+ | :--- | :--- | :--- |
+ | **FreeBSD Handbook** | [📄 **Visualizar PDF**](https://download.freebsd.org/doc/en/books/handbook/handbook_en.pdf) | [📥 **Baixar Página**](https://download.freebsd.org/doc/en/books/handbook/handbook_en.tar.gz) |
+ | **Developers Handbook** | [📄 **Visualizar PDF**](https://download.freebsd.org/doc/en/books/developers-handbook/developers-handbook_en.pdf) | [📥 **Baixar Página**](https://download.freebsd.org/doc/en/books/developers-handbook/developers-handbook_en.tar.gz) |
+ | **FreeBSD FAQ** | [📄 **Visualizar PDF**](https://download.freebsd.org/doc/en/books/faq/faq_en.pdf) | [📥 **Baixar Página**](https://download.freebsd.org/doc/en/books/faq/faq_en.tar.gz) |
 
 ---
 
