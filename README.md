@@ -44,10 +44,10 @@
 
  | Recurso | Tipo | Descrição | Link |
  | :--- | :--- | :--- | :--- |
- | **FreeBSD Handbook** | Guia | O "guia definitivo" para instalação e administração. | [🌐 **Acessar**](https://docs.freebsd.org/en/books/handbook/) |
- | **Developers Handbook** | Guia | Essencial para **programação de sockets**, chamadas de sistema e arquitetura do kernel. | [🌐 **Acessar**](https://docs.freebsd.org/en/books/developers-handbook/) |
- | **FreeBSD FAQ** | FAQ | Respostas para as dúvidas mais comuns sobre o SO. | [🌐 **Acessar**](https://docs.freebsd.org/en/books/faq/) |
- | **Manual Pages** | Manual | Referência direta de comandos e funções da biblioteca C. | [🌐 **Acessar**](https://man.freebsd.org/) |
+ | **FreeBSD Handbook** | Guia | Instalação e administração. | [🌐 **Acessar**](https://docs.freebsd.org/en/books/handbook/) |
+ | **Developers Handbook** | Guia | Programação, sockets e kernel. | [🌐 **Acessar**](https://docs.freebsd.org/en/books/developers-handbook/) |
+ | **FreeBSD FAQ** | FAQ | Dúvidas comuns sobre o SO. | [🌐 **Acessar**](https://docs.freebsd.org/en/books/faq/) |
+ | **Manual Pages** | Manual | Comandos, syscalls e funções C. | [🌐 **Acessar**](https://man.freebsd.org/) |
 
 ## 📥 **Download Offline (PDF)**
  *Ideal para ambientes isolados (air-gapped) ou leitura focada sem distrações.*
