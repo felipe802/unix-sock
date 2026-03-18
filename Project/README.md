@@ -3,14 +3,15 @@
 ## 🎯 **Arquitetura e Objetivo Técnico (V1)**
  Implementação de um servidor web e API REST robusta em **C puro (C23)**, operando diretamente sobre a API padrão de **Berkeley Sockets**. Este projeto foi desenhado com foco estrito em **portabilidade UNIX (POSIX)**, garantindo execução nativa tanto em ambientes **FreeBSD** quanto **Linux**.
 
- O objetivo primário é a exploração da pilha TCP/IP e a superação das armadilhas clássicas de I/O, adotando o padrão de *Clean Architecture* e *Zero-Copy Parsing*.
+ O objetivo primário é a exploração da pilha TCP/IP e a superação das armadilhas clássicas de I/O, adotando o padrão de *Clean Architecture* e *In-Place Parsing*.
 
-### ⚙️ **Modelo de Concorrência: Fork-per-Request & Self-Pipe Trick**
- Para garantir que múltiplas requisições sejam atendidas simultaneamente sem bloqueio de I/O, o servidor adota a system call `fork()`, aliada a um sofisticado controle de estado:
+### ⚙️ **Modelo de Concorrência e Processamento de Rede**
+ Para garantir que múltiplas requisições sejam atendidas simultaneamente sem bloqueio de I/O e que o protocolo HTTP seja respeitado rigorosamente, o servidor adota a system call `fork()`, aliada a um sofisticado controle de estado e memória:
 
  * **Isolamento de Falhas (Workers):** Cada conexão é delegada a um processo filho isolado, protegendo o daemon principal.
  * **O "Self-Pipe Trick" e `poll()`:** Para superar a limitação assíncrona dos sinais POSIX, o servidor utiliza um `pipe` local não-bloqueante. Sinais do Kernel são injetados no cano e monitorados de forma síncrona pelo `poll()` junto com os sockets de rede.
  * **Resiliência a `EINTR`:** O loop de eventos captura e trata *Interrupted System Calls*, garantindo estabilidade durante a limpeza de processos zumbis.
+ * **Enquadramento (Framing) TCP Seguro:** O parser HTTP implementa uma máquina de estados resiliente para remontagem de payloads fragmentados na rede, baseando-se dinamicamente no cabeçalho `Content-Length`. Isso imuniza o servidor contra a fragmentação natural da Camada de Transporte.
 
 ### ⏱️ **Ciclo de Vida da Conexão (V1)**
  ```mermaid
@@ -29,7 +30,7 @@
              C->>OS: TCP 3-Way Handshake
              OS-->>M: POLLIN no server_fd
              M->>W: fork()
-             W->>C: Zero-Copy HTTP Parse & Resposta
+             W->>C: In-Place HTTP Parsing & Response
              W->>OS: _exit(0)
 
          else Sinal Assíncrono (SIGCHLD)
@@ -47,7 +48,7 @@
  | **GET** | Leitura via I/O padrão (`fread`) | Recursos estáticos ou serialização JSON. |
  | **POST** | Criação via `fopen(..., "w")` | Criação integral de novos recursos. |
  | **PUT** | Escrita Idempotente | Substituição completa de um recurso existente. |
- | **PATCH** | Modificação via `fopen(..., "a")` | Atualização parcial via *append*. |
+ | **PATCH** | Modificação via `fopen(..., "a")` | Atualização parcial do recurso *(Nota: implementado via append de I/O em C, como adaptação ao conceito de modificação parcial).* |
  | **DELETE** | Remoção via syscall `remove()` | Exclusão definitiva no sistema de arquivos. |
 
 ## 🔨 **Compilação e Deploy**

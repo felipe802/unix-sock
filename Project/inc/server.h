@@ -1,6 +1,17 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-int server_init(int port);
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+typedef enum ip_mode
+{
+	IP_MODE_IPV4_ONLY,
+	IP_MODE_IPV6_ONLY,
+	IP_MODE_DUAL_STACK
+} ip_mode_t;
+
+int server_init(uint16_t port, ip_mode_t mode);
 
 #endif

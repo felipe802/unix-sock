@@ -1,6 +1,10 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#define PORT 8080
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+#define PORT 80
 
 #endif

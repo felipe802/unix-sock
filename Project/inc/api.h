@@ -1,6 +1,8 @@
 #ifndef API_H
 #define API_H
 
+#include <stddef.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include "http.h"
 

@@ -1,9 +1,9 @@
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <dirent.h>
@@ -43,7 +43,7 @@ static bool requires_auth(http_request_t *req)
 
 static bool is_authenticated(http_request_t *req)
 {
-	for (int i = 0; i < req->header_count; i++)
+	for (size_t i = 0; i < req->header_count; i++)
 	{
 		if (strcmp(req->headers[i].key, "Authorization") == 0)
 		{
@@ -81,10 +81,9 @@ static void api_handle_get(int client_socket, http_request_t *req)
 				{
 					if (!is_first)
 					{
-						offset += snprintf(json_list + offset, sizeof(json_list) - offset, ",");
+						offset += (size_t)snprintf(json_list + offset, sizeof(json_list) - offset, ",");
 					}
-					offset += snprintf(json_list + offset, sizeof(json_list) - offset, "\"%s\"", ent->d_name);
-					is_first = 0;
+					offset += (size_t)snprintf(json_list + offset, sizeof(json_list) - offset, "\"%s\"", ent->d_name);
 				}
 			}
 			closedir(dir);
