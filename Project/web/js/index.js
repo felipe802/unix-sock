@@ -10,7 +10,7 @@ function carregarSalas() {
         .then(arquivos => {
             const roomList = document.getElementById('roomList');
             roomList.innerHTML = '';
-            
+
             const salas = arquivos.filter(arq => arq.startsWith('sala_') && arq.endsWith('.json'));
 
             if (salas.length === 0) {
@@ -20,7 +20,7 @@ function carregarSalas() {
 
             salas.forEach(sala => {
                 const idFormatado = sala.replace('sala_', '').replace('.json', '');
-                
+
                 const card = document.createElement('div');
                 card.className = 'room-card';
                 card.innerHTML = `
@@ -72,16 +72,16 @@ function entrarSala(arquivoSala) {
 
             if (jogador === estadoJogo.players.X) {
                 simbolo = 'X';
-            } 
+            }
             else if (jogador === estadoJogo.players.O) {
                 simbolo = 'O';
-            } 
+            }
             else if (estadoJogo.players.O === null) {
                 simbolo = 'O';
-            } 
+            }
             else {
                 alert("Sala cheia! Os donos da sala são " + estadoJogo.players.X + " e " + estadoJogo.players.O);
-                return; 
+                return;
             }
 
             window.location.href = `sala?sala=${arquivoSala}&jogador=${jogador}&simbolo=${simbolo}`;
