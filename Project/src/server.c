@@ -15,6 +15,7 @@ static void log_server_addresses(uint16_t port, ip_mode_t mode)
 
 	printf("[INFO]: Servidor inicializado.\n");
 	printf("[INFO]: Acesse o servidor através dos links abaixo:\n");
+	printf("        [LocalHost] -> http://localhost:%u/\n", port);
 
 	if (getifaddrs(&interfaces) != 0)
 	{
