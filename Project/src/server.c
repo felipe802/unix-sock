@@ -20,10 +20,10 @@ static void log_server_addresses(uint16_t port, ip_mode_t mode)
 	if (getifaddrs(&interfaces) != 0)
 	{
 		if (mode == IP_MODE_IPV4_ONLY || mode == IP_MODE_DUAL_STACK)
-			printf("        [IPv4 (Local)] -> http://127.0.0.1:%u/\n", port);
+			printf("        [IPv4]      -> http://127.0.0.1:%u/\n", port);
 
 		if (mode == IP_MODE_IPV6_ONLY || mode == IP_MODE_DUAL_STACK)
-			printf("        [IPv6 (Local)] -> http://[::1]:%u/\n", port);
+			printf("        [IPv6]      -> http://[::1]:%u/\n", port);
 
 		printf("\n[INFO]: Pressione Ctrl+C para encerrar o servidor.\n\n");
 		return;
@@ -40,13 +40,13 @@ static void log_server_addresses(uint16_t port, ip_mode_t mode)
 		{
 			struct sockaddr_in *sock_addr = (struct sockaddr_in *)temp_addr->ifa_addr;
 			inet_ntop(AF_INET, &sock_addr->sin_addr, ip_str, sizeof(ip_str));
-			printf("        [IPv4] -> http://%s:%u/\n", ip_str, port);
+			printf("        [IPv4]      -> http://%s:%u/\n", ip_str, port);
 		}
 		else if (family == AF_INET6 && (mode == IP_MODE_IPV6_ONLY || mode == IP_MODE_DUAL_STACK))
 		{
 			struct sockaddr_in6 *sock_addr6 = (struct sockaddr_in6 *)temp_addr->ifa_addr;
 			inet_ntop(AF_INET6, &sock_addr6->sin6_addr, ip_str, sizeof(ip_str));
-			printf("        [IPv6] -> http://[%s]:%u/\n", ip_str, port);
+			printf("        [IPv6]      -> http://[%s]:%u/\n", ip_str, port);
 		}
 	}
 
