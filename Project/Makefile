@@ -1,12 +1,14 @@
 CC       := gcc
-CFLAGS   := -std=c23 -O2 -fstack-protector-strong
-WFLAGS   := -Wformat=2 -Wall -Wextra -Wvla -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Werror
-CPPFLAGS := -I./inc -D_POSIX_C_SOURCE=202405L -D_FORTIFY_SOURCE=2
-LDFLAGS  :=
+CFLAGS   := -std=c23 -fstack-protector-strong
+WFLAGS   := -Wformat=2 -Wall -Wextra -Wvla -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Werror -Wno-cpp
+CPPFLAGS := -I./inc -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=202405L -D_FORTIFY_SOURCE=2
+LDFLAGS  := -flto
 TARGET   := server
 
 ifdef DEBUG
-	CFLAGS += -O1 -g -fsanitize=address,undefined
+    CFLAGS += -O1 -g -fsanitize=address,undefined
+else
+    CFLAGS += -O2
 endif
 
 SRCDIR   := src
@@ -35,7 +37,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c $(HEADERS)
 .PHONY: run
 run: build
 	@echo "🚀 Iniciando Servidor..."
-	@sudo ./$(TARGET)
+	@./$(TARGET)
 
 .PHONY: clear clean
 clear clean:
@@ -44,5 +46,5 @@ clear clean:
 
 .PHONY: erase
 erase: clean
-	@sudo rm -rf $(DATADIR)
+	@rm -rf $(DATADIR)
 	@echo "🔥 Apagamento Total! (Pasta de Dados também foi Destruída)."
