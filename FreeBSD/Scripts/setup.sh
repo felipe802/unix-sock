@@ -270,13 +270,14 @@ update_prompt() {
 
 	local cur_user="${USER:-$(id -un)}"
 	local cur_host="$(hostname -s)"
-	local cur_dir="${PWD}"
-	
-	cur_dir="${cur_dir#$HOME}"
-	if [ "${PWD}" != "${cur_dir}" ]; then
-		cur_dir="~${cur_dir}"
+
+	local cur_dir
+	if [ "${PWD}" = "${HOME}" ]; then
+		cur_dir="~"
+	elif [ "${PWD}" = "/" ]; then
+		cur_dir="/"
 	else
-		cur_dir="${PWD}"
+		cur_dir="$(basename "${PWD}")"
 	fi
 
 	export PS1="${usr_color}${cur_user}${C_BRT_BLUE}@${C_BRT_MAGENTA}${cur_host}${C_BRT_GRAY}:${C_BRT_GRAY}[${C_BRT_YELLOW}${cur_dir}${C_BRT_GRAY}]${C_RESET}${git_info}${C_BRT_CYAN}\$${C_RESET} "
