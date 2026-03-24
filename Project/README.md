@@ -129,6 +129,7 @@ Prepara um diretório local seguro para binários de usuário (`~/.local/bin`) e
 ### 🍺 Setup Brew (Linuxbrew)
 *(Opcional se utilizar apenas o APT)*. Instalação do gerenciador de pacotes Homebrew. É uma alternativa robusta para obter pacotes na modalidade *bleeding-edge* (as versões mais recentes possíveis), operando no espaço de usuário (User Space) sem comprometer as dependências do sistema operacional.
  ```bash
+ sudo -v
  NONINTERACTIVE=1 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
  cat << 'EOF' | tee -a "${HOME}/.bashrc" > "/dev/null"
  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
