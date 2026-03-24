@@ -1,11 +1,11 @@
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <unistd.h>
-#include <ifaddrs.h>
-#include <arpa/inet.h>
+
 #include "server.h"
 
 static void log_server_addresses(uint16_t port, ip_mode_t mode)
@@ -29,9 +29,9 @@ static void log_server_addresses(uint16_t port, ip_mode_t mode)
 		return;
 	}
 
-	for (struct ifaddrs *temp_addr = interfaces; temp_addr != NULL; temp_addr = temp_addr->ifa_next)
+	for (struct ifaddrs *temp_addr = interfaces; temp_addr != nullptr; temp_addr = temp_addr->ifa_next)
 	{
-		if (temp_addr->ifa_addr == NULL)
+		if (temp_addr->ifa_addr == nullptr)
 			continue;
 
 		int family = temp_addr->ifa_addr->sa_family;

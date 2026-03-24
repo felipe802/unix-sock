@@ -1,19 +1,22 @@
+#include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <poll.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/wait.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <poll.h>
-#include <fcntl.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
+#include "http.h"
 #include "main.h"
 #include "server.h"
-#include "http.h"
 
-static int sig_pipe[2];
+constexpr size_t PIPE_FD_COUNT = 2;
+constexpr size_t POLL_EVENT_COUNT = 2;
+
+static int sig_pipe[PIPE_FD_COUNT];
 
 static void generic_signal_handler(int signum)
 {
@@ -22,7 +25,7 @@ static void generic_signal_handler(int signum)
 	errno = saved_errno;
 }
 
-static int setup_self_pipe(void)
+static int setup_self_pipe()
 {
 	if (pipe(sig_pipe) == -1)
 	{
@@ -40,9 +43,8 @@ static int setup_self_pipe(void)
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
 
-	if (sigaction(SIGINT, &sa, NULL) == -1 ||
-		sigaction(SIGTSTP, &sa, NULL) == -1 ||
-		sigaction(SIGCHLD, &sa, NULL) == -1)
+	if (sigaction(SIGINT, &sa, nullptr) == -1 || sigaction(SIGTSTP, &sa, nullptr) == -1 ||
+	    sigaction(SIGCHLD, &sa, nullptr) == -1)
 	{
 		perror("[ERRO]: sigaction");
 		return -1;
@@ -114,15 +116,14 @@ int main()
 
 	int server_fd = server_init(PORT, IP_MODE_DUAL_STACK);
 
-	struct pollfd fds[2] = {
-		{.fd = server_fd, .events = POLLIN, .revents = 0},
-		{.fd = pipe_read_fd, .events = POLLIN, .revents = 0}};
+	struct pollfd fds[POLL_EVENT_COUNT] = {{.fd = server_fd, .events = POLLIN, .revents = 0},
+	                                       {.fd = pipe_read_fd, .events = POLLIN, .revents = 0}};
 
 	int running = 1;
 
 	while (running)
 	{
-		int poll_result = poll(fds, 2, -1);
+		int poll_result = poll(fds, POLL_EVENT_COUNT, -1);
 
 		if (poll_result < 0)
 		{

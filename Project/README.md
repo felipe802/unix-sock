@@ -77,7 +77,7 @@
  	subgraph "User Space (V2 Engine)"
  		EP[Event Multiplexer: kqueue / epoll]
  		TQ[Task Queue]
- 		
+
  		subgraph "Thread Pool (Workers)"
  			T1[Thread 1]
  			T2[Thread 2]
@@ -96,7 +96,7 @@
 
  	style EP fill:#3b82f6,stroke:#fff,color:#fff
  	style TQ fill:#1e293b,stroke:#fff,color:#fff
- 	style K_NET fill:#10b981,stroke:#fff,color:#fff 
+ 	style K_NET fill:#10b981,stroke:#fff,color:#fff
  ```
 
  1. **I/O Assíncrono Nativo:** Substituição do `poll()` por **`kqueue`** (FreeBSD) ou **`epoll`** (Linux), permitindo gerenciar milhares de conexões com complexidade $O(1)$.

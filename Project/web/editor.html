@@ -4,13 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <title>Gerenciador de Arquivos C</title>
+    <link rel="icon" type="image/x-icon" href="res/editor.ico">
     <link rel="stylesheet" href="css/editor.css">
 </head>
 
 <body>
     <div class="app-layout">
         <aside class="sidebar">
-            <h3>Arquivos em ./data/</h3>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                <img src="res/editor.png" alt="Ícone Editor" style="width: 30px; height: 30px;">
+                <h3 style="margin: 0;">Arquivos em ./data/</h3>
+            </div>
             <ul id="fileList">
                 <li>Carregando...</li>
             </ul>

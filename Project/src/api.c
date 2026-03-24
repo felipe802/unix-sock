@@ -1,26 +1,27 @@
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <dirent.h>
 
 #include "api.h"
 #include "http.h"
 
-#define DATA_DIR "./data/"
-#define API_DATA_PREFIX "/api/data/"
-#define API_FILES_ROUTE "/api/files"
-#define ROUTE_EDITOR "/editor"
-#define ROUTE_EDITOR_HTML "/editor.html"
+constexpr char DATA_DIR[] = "./data/";
+constexpr char API_DATA_PREFIX[] = "/api/data/";
+constexpr char API_FILES_ROUTE[] = "/api/files";
+constexpr char ROUTE_EDITOR[] = "/editor";
+constexpr char ROUTE_EDITOR_HTML[] = "/editor.html";
 
-#define AUTH_CREDENTIALS "Basic YWRtaW46YWRtaW4="
-#define AUTH_REALM "Area Restrita do Admin"
-#define PATH_BUFFER_SIZE 1024
-#define RESP_BUFFER_SIZE 8192
+constexpr char AUTH_CREDENTIALS[] = "Basic YWRtaW46YWRtaW4=";
+constexpr char AUTH_REALM[] = "Area Restrita do Admin";
+
+constexpr size_t PATH_BUFFER_SIZE = 1024;
+constexpr size_t RESP_BUFFER_SIZE = 8192;
+constexpr size_t AUTH_HEADER_BUFFER_SIZE = 1024;
 
 static void ensure_data_directory()
 {
@@ -65,9 +66,9 @@ static void api_handle_get(int client_socket, http_request_t *req)
 		char json_list[RESP_BUFFER_SIZE] = "[";
 		size_t offset = 1;
 
-		if ((dir = opendir(DATA_DIR)) != NULL)
+		if ((dir = opendir(DATA_DIR)) != nullptr)
 		{
-			while ((ent = readdir(dir)) != NULL)
+			while ((ent = readdir(dir)) != nullptr)
 			{
 				if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
 					continue;
@@ -102,7 +103,7 @@ static void api_handle_get(int client_socket, http_request_t *req)
 	if (strncmp(req->path, API_DATA_PREFIX, strlen(API_DATA_PREFIX)) == 0)
 	{
 		const char *filename = req->path + strlen(API_DATA_PREFIX);
-		if (strchr(filename, '/') != NULL)
+		if (strchr(filename, '/') != nullptr)
 		{
 			http_send_error(client_socket, HTTP_STATUS_FORBIDDEN, "Forbidden", "Subdiretórios não permitidos.");
 			return;
@@ -135,7 +136,7 @@ static void api_handle_post(int client_socket, http_request_t *req)
 	if (strncmp(req->path, API_DATA_PREFIX, strlen(API_DATA_PREFIX)) == 0)
 	{
 		const char *filename = req->path + strlen(API_DATA_PREFIX);
-		if (strchr(filename, '/') != NULL)
+		if (strchr(filename, '/') != nullptr)
 			return;
 
 		char filepath[PATH_BUFFER_SIZE];
@@ -167,7 +168,7 @@ static void api_handle_put(int client_socket, http_request_t *req)
 	if (strncmp(req->path, API_DATA_PREFIX, strlen(API_DATA_PREFIX)) == 0)
 	{
 		const char *filename = req->path + strlen(API_DATA_PREFIX);
-		if (strchr(filename, '/') != NULL)
+		if (strchr(filename, '/') != nullptr)
 			return;
 
 		char filepath[PATH_BUFFER_SIZE];
@@ -199,7 +200,7 @@ static void api_handle_patch(int client_socket, http_request_t *req)
 	if (strncmp(req->path, API_DATA_PREFIX, strlen(API_DATA_PREFIX)) == 0)
 	{
 		const char *filename = req->path + strlen(API_DATA_PREFIX);
-		if (strchr(filename, '/') != NULL)
+		if (strchr(filename, '/') != nullptr)
 			return;
 
 		char filepath[PATH_BUFFER_SIZE];
@@ -231,7 +232,7 @@ static void api_handle_delete(int client_socket, http_request_t *req)
 	if (strncmp(req->path, API_DATA_PREFIX, strlen(API_DATA_PREFIX)) == 0)
 	{
 		const char *filename = req->path + strlen(API_DATA_PREFIX);
-		if (strchr(filename, '/') != NULL)
+		if (strchr(filename, '/') != nullptr)
 			return;
 
 		char filepath[PATH_BUFFER_SIZE];
@@ -261,16 +262,16 @@ bool api_handle_request(int client_socket, http_request_t *req)
 
 	if (requires_auth(req) && !is_authenticated(req))
 	{
-		char header_buffer[1024];
+		char header_buffer[AUTH_HEADER_BUFFER_SIZE];
 		const char *body = "Não autorizado. Credenciais incorretas ou ausentes.";
 
 		snprintf(header_buffer, sizeof(header_buffer),
-				 "HTTP/1.1 401 Unauthorized\r\n"
-				 "WWW-Authenticate: Basic realm=\"" AUTH_REALM "\"\r\n"
-				 "Content-Length: %zu\r\n"
-				 "Connection: close\r\n\r\n"
-				 "%s",
-				 strlen(body), body);
+		         "HTTP/1.1 401 Unauthorized\r\n"
+		         "WWW-Authenticate: Basic realm=\"%s\"\r\n"
+		         "Content-Length: %zu\r\n"
+		         "Connection: close\r\n\r\n"
+		         "%s",
+		         AUTH_REALM, strlen(body), body);
 
 		send(client_socket, header_buffer, strlen(header_buffer), 0);
 		return true;

@@ -1,3 +1,7 @@
+# =========================
+# Padrão do C/C++
+# =========================
+
 # Prerequisites
 *.d
 
@@ -50,3 +54,21 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# =========================
+# Customizações do Projeto
+# =========================
+
+# Banco de dados e testes locais
+data/
+
+# O executável principal gerado pelo Makefile
+server.exe
+server
+
+# Diretório de objetos
+obj/
+
+# Ferramentas do LLVM/Clangd
+compile_commands.json
+.cache/

@@ -5,13 +5,17 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Sala do Jogo</title>
+	<link rel="icon" type="image/x-icon" href="res/game.ico">
 	<link rel="stylesheet" href="css/sala.css">
 </head>
 
 <body>
 	<div class="game-wrapper">
 		<div class="game-header">
-			<h2>Sala: <span id="lblSala" class="highlight">...</span></h2>
+			<div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px;">
+				<img src="res/game.png" alt="Ícone da Sala" style="width: 40px; height: 40px;">
+				<h2 style="margin: 0;">Sala: <span id="lblSala" class="highlight">...</span></h2>
+			</div>
 			<p>Você é o jogador: <span id="lblJogador" class="highlight">...</span> ( <strong
 					id="lblSimbolo">...</strong> )</p>
 			<div id="statusTurno" class="status-banner">Aguardando...</div>

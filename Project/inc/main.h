@@ -3,8 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
-#define PORT 80
+constexpr uint16_t PORT = 80;
 
 #endif

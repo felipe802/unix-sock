@@ -3,15 +3,14 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
-#define HTTP_STATUS_OK 200
-#define HTTP_STATUS_UNAUTHORIZED 401
-#define HTTP_STATUS_FORBIDDEN 403
-#define HTTP_STATUS_NOT_FOUND 404
-#define HTTP_STATUS_NOT_ALLOWED 405
+constexpr int HTTP_STATUS_OK = 200;
+constexpr int HTTP_STATUS_UNAUTHORIZED = 401;
+constexpr int HTTP_STATUS_FORBIDDEN = 403;
+constexpr int HTTP_STATUS_NOT_FOUND = 404;
+constexpr int HTTP_STATUS_NOT_ALLOWED = 405;
 
-#define MAX_HTTP_HEADERS 32
+constexpr size_t MAX_HTTP_HEADERS = 32;
 
 typedef enum http_method
 {

@@ -1,6 +1,6 @@
 CC       := gcc
 CFLAGS   := -std=c23 -fstack-protector-strong
-WFLAGS   := -Wformat=2 -Wall -Wextra -Wvla -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Werror -Wno-cpp
+WFLAGS   := -Wformat=2 -Wall -Wextra -Wvla -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Werror -Wno-cpp -Wno-missing-field-initializers
 CPPFLAGS := -I./inc -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=202405L -D_FORTIFY_SOURCE=2
 LDFLAGS  := -flto
 TARGET   := server
@@ -27,17 +27,20 @@ all: build
 build: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(CFLAGS) $(WFLAGS) $(LDFLAGS) $^ -o $@
+	@echo "🔗 Ligando objetos e gerando binário '$(TARGET)'..."
+	@$(CC) $(CFLAGS) $(WFLAGS) $(LDFLAGS) $^ -o $@
 	@echo "✅ Executável '$(TARGET)' Gerado com Sucesso!"
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c $(HEADERS)
 	@mkdir -p $(OBJDIR)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(WFLAGS) -c $< -o $@
+	@echo "⚙️  Compilando $<..."
+	@$(CC) $(CPPFLAGS) $(CFLAGS) $(WFLAGS) -c $< -o $@
 
 .PHONY: run
 run: build
-	@echo "🚀 Iniciando Servidor..."
+	@echo "🟢 Iniciando Servidor..."
 	@./$(TARGET)
+	@echo "🛑 Servidor Encerrado."
 
 .PHONY: clear clean
 clear clean:
@@ -48,3 +51,8 @@ clear clean:
 erase: clean
 	@rm -rf $(DATADIR)
 	@echo "🔥 Apagamento Total! (Pasta de Dados também foi Destruída)."
+
+.PHONY: clangd
+clangd: clean
+	bear -- $(MAKE) build
+	@echo "📝 Arquivo 'compile_commands.json' atualizado para o Clangd!"

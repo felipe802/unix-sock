@@ -3,7 +3,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 typedef enum ip_mode
 {
@@ -12,6 +11,6 @@ typedef enum ip_mode
 	IP_MODE_DUAL_STACK
 } ip_mode_t;
 
-int server_init(uint16_t port, ip_mode_t mode);
+[[nodiscard]] int server_init(uint16_t port, ip_mode_t mode);
 
 #endif

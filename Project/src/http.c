@@ -1,22 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <strings.h>
 #include <string.h>
-#include <ctype.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <strings.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-#include "http.h"
 #include "api.h"
+#include "http.h"
 
-#define STATIC_DIR "./web/"
-#define RECV_BUFFER_SIZE 8192
-#define PATH_BUFFER_SIZE 1024
-#define HEADER_BUFFER_SIZE 1024
-#define FILE_CHUNK_SIZE 8192
+constexpr char STATIC_DIR[] = "./web/";
+constexpr size_t RECV_BUFFER_SIZE = 8192;
+constexpr size_t PATH_BUFFER_SIZE = 1024;
+constexpr size_t HEADER_BUFFER_SIZE = 1024;
+constexpr size_t FILE_CHUNK_SIZE = 8192;
 
 static void ensure_static_directory()
 {
@@ -35,14 +33,9 @@ static const char *get_mime_type(const char *path)
 	{
 		const char *ext;
 		const char *type;
-	} mime_map[] = {
-		{".html", "text/html"},
-		{".css", "text/css"},
-		{".js", "application/javascript"},
-		{".json", "application/json"},
-		{".png", "image/png"},
-		{".jpg", "image/jpeg"},
-		{".jpeg", "image/jpeg"}};
+	} mime_map[] = {{".html", "text/html"},        {".css", "text/css"},    {".js", "application/javascript"},
+	                {".json", "application/json"}, {".png", "image/png"},   {".jpg", "image/jpeg"},
+	                {".jpeg", "image/jpeg"},       {".ico", "image/x-icon"}};
 
 	size_t map_size = sizeof(mime_map) / sizeof(mime_map[0]);
 	for (size_t i = 0; i < map_size; i++)
@@ -61,11 +54,7 @@ static http_method_t parse_method(const char *method_str)
 		const char *str;
 		http_method_t method;
 	} method_map[] = {
-		{"GET", HTTP_GET},
-		{"POST", HTTP_POST},
-		{"PUT", HTTP_PUT},
-		{"PATCH", HTTP_PATCH},
-		{"DELETE", HTTP_DELETE}};
+	    {"GET", HTTP_GET}, {"POST", HTTP_POST}, {"PUT", HTTP_PUT}, {"PATCH", HTTP_PATCH}, {"DELETE", HTTP_DELETE}};
 
 	size_t map_size = sizeof(method_map) / sizeof(method_map[0]);
 	for (size_t i = 0; i < map_size; i++)
@@ -79,7 +68,7 @@ static http_method_t parse_method(const char *method_str)
 static void parse_http_request(char *buffer, http_request_t *req)
 {
 	req->header_count = 0;
-	req->body = NULL;
+	req->body = nullptr;
 	req->body_len = 0;
 
 	char *saveptr;
@@ -117,7 +106,7 @@ static void parse_http_request(char *buffer, http_request_t *req)
 
 	req->method = parse_method(method_str);
 
-	while ((line = strtok_r(NULL, "\r\n", &saveptr)) && req->header_count < MAX_HTTP_HEADERS)
+	while ((line = strtok_r(nullptr, "\r\n", &saveptr)) && req->header_count < MAX_HTTP_HEADERS)
 	{
 		char *colon = strchr(line, ':');
 		if (colon)
@@ -139,15 +128,15 @@ void http_send_response(int client_socket, http_response_t *res)
 	int ret;
 
 	ret = snprintf(header_buffer + offset, sizeof(header_buffer) - offset,
-				   "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nConnection: close\r\n",
-				   res->status_code, res->status_message, res->content_type);
+	               "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nConnection: close\r\n", res->status_code, res->status_message,
+	               res->content_type);
 	if (ret > 0)
 		offset += (size_t)ret;
 
 	for (size_t i = 0; i < res->header_count && i < MAX_HTTP_HEADERS; i++)
 	{
-		ret = snprintf(header_buffer + offset, sizeof(header_buffer) - offset,
-					   "%s: %s\r\n", res->headers[i].key, res->headers[i].value);
+		ret = snprintf(header_buffer + offset, sizeof(header_buffer) - offset, "%s: %s\r\n", res->headers[i].key,
+		               res->headers[i].value);
 		if (ret > 0)
 			offset += (size_t)ret;
 	}
@@ -162,8 +151,8 @@ void http_send_response(int client_socket, http_response_t *res)
 		long file_size = ftell(file);
 		fseek(file, 0, SEEK_SET);
 
-		ret = snprintf(header_buffer + offset, sizeof(header_buffer) - offset,
-					   "Content-Length: %ld\r\n\r\n", file_size);
+		ret =
+		    snprintf(header_buffer + offset, sizeof(header_buffer) - offset, "Content-Length: %ld\r\n\r\n", file_size);
 		if (ret > 0)
 			offset += (size_t)ret;
 
@@ -180,8 +169,8 @@ void http_send_response(int client_socket, http_response_t *res)
 	}
 	else
 	{
-		ret = snprintf(header_buffer + offset, sizeof(header_buffer) - offset,
-					   "Content-Length: %lu\r\n\r\n", (unsigned long)res->body_len);
+		ret = snprintf(header_buffer + offset, sizeof(header_buffer) - offset, "Content-Length: %lu\r\n\r\n",
+		               (unsigned long)res->body_len);
 		if (ret > 0)
 			offset += (size_t)ret;
 
@@ -248,12 +237,11 @@ void http_handle_client(int client_socket)
 
 	char buffer[RECV_BUFFER_SIZE] = {};
 	size_t total_received = 0;
-	char *body_separator = NULL;
+	char *body_separator = nullptr;
 
 	while (total_received < sizeof(buffer) - 1)
 	{
-		ssize_t bytes_received = recv(client_socket, buffer + total_received,
-									  sizeof(buffer) - 1 - total_received, 0);
+		ssize_t bytes_received = recv(client_socket, buffer + total_received, sizeof(buffer) - 1 - total_received, 0);
 
 		if (bytes_received <= 0)
 			break;
@@ -262,13 +250,13 @@ void http_handle_client(int client_socket)
 		buffer[total_received] = '\0';
 
 		body_separator = strstr(buffer, "\r\n\r\n");
-		if (body_separator != NULL)
+		if (body_separator != nullptr)
 		{
 			break;
 		}
 	}
 
-	if (total_received <= 0 || body_separator == NULL)
+	if (total_received <= 0 || body_separator == nullptr)
 	{
 		return;
 	}
@@ -285,7 +273,7 @@ void http_handle_client(int client_socket)
 	{
 		if (strcasecmp(req.headers[i].key, "Content-Length") == 0)
 		{
-			req.body_len = (size_t)strtoul(req.headers[i].value, NULL, 10);
+			req.body_len = (size_t)strtoul(req.headers[i].value, nullptr, 10);
 			break;
 		}
 	}
@@ -313,9 +301,7 @@ void http_handle_client(int client_socket)
 		{
 			size_t bytes_to_read = req.body_len - current_body_bytes;
 
-			ssize_t bytes = recv(client_socket,
-								 req.body + current_body_bytes,
-								 bytes_to_read, 0);
+			ssize_t bytes = recv(client_socket, req.body + current_body_bytes, bytes_to_read, 0);
 
 			if (bytes <= 0)
 			{
@@ -329,9 +315,9 @@ void http_handle_client(int client_socket)
 		req.body[current_body_bytes] = '\0';
 	}
 
-	if (req.path != NULL)
+	if (req.path != nullptr)
 	{
-		if (strstr(req.path, "..") != NULL)
+		if (strstr(req.path, "..") != nullptr)
 		{
 			http_send_error(client_socket, HTTP_STATUS_FORBIDDEN, "Forbidden", "Acesso Negado.");
 		}
@@ -348,7 +334,7 @@ void http_handle_client(int client_socket)
 		}
 	}
 
-	if (req.body != NULL)
+	if (req.body != nullptr)
 	{
 		free(req.body);
 	}
