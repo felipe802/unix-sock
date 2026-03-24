@@ -15,25 +15,25 @@ function carregarListaArquivos() {
     fetch('/api/files')
         .then(res => res.json())
         .then(arquivos => {
-            fileList.innerHTML = '';
             if (arquivos.length === 0) {
                 fileList.innerHTML = '<li>Nenhum arquivo encontrado</li>';
                 return;
             }
+
+            let novoHTML = '';
             arquivos.forEach(arq => {
-                const li = document.createElement('li');
-                li.textContent = arq;
-                if(arq === arquivoAtual) li.className = 'ativo';
-                li.onclick = () => abrirArquivo(arq);
-                fileList.appendChild(li);
+                const classeAtivo = (arq === arquivoAtual) ? 'class="ativo"' : '';
+                novoHTML += `<li ${classeAtivo} onclick="abrirArquivo('${arq}')">${arq}</li>`;
             });
+
+            fileList.innerHTML = novoHTML;
         });
 }
 
 function abrirArquivo(nomeArquivo) {
     arquivoAtual = nomeArquivo;
     currentFileSpan.textContent = nomeArquivo;
-    
+
     editor.disabled = false;
     btnSalvar.disabled = false;
     btnExcluir.disabled = false;
@@ -52,7 +52,7 @@ btnNovo.onclick = () => {
     let nome = inputNovo.value.trim();
     if(!nome) return;
     if(!nome.includes('.')) nome += '.txt';
-    
+
     fetch('/api/data/' + nome, { method: 'POST', body: "" })
         .then(() => {
             inputNovo.value = '';
@@ -62,7 +62,7 @@ btnNovo.onclick = () => {
 
 btnSalvar.onclick = () => {
     if (!arquivoAtual) return;
-    
+
     btnSalvar.textContent = 'Salvando...';
     btnSalvar.disabled = true;
 
@@ -83,7 +83,7 @@ btnSalvar.onclick = () => {
 
 btnExcluir.onclick = () => {
     if (!arquivoAtual || !confirm(`Tem certeza que deseja excluir ${arquivoAtual}?`)) return;
-    
+
     btnExcluir.disabled = true;
 
     fetch('/api/data/' + arquivoAtual, { method: 'DELETE' })
@@ -109,3 +109,5 @@ function mostrarStatus(msg, classe) {
     statusMsg.className = `status-visivel ${classe}`;
     setTimeout(() => { statusMsg.className = 'status-oculto'; }, 3000);
 }
+
+setInterval(carregarListaArquivos, 4096);

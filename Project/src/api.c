@@ -64,7 +64,6 @@ static void api_handle_get(int client_socket, http_request_t *req)
 		struct dirent *ent;
 		char json_list[RESP_BUFFER_SIZE] = "[";
 		size_t offset = 1;
-		bool is_first = true;
 
 		if ((dir = opendir(DATA_DIR)) != NULL)
 		{
@@ -79,12 +78,11 @@ static void api_handle_get(int client_socket, http_request_t *req)
 				struct stat st;
 				if (stat(filepath, &st) == 0 && S_ISREG(st.st_mode))
 				{
-					if (!is_first)
+					if (offset > 1)
 					{
 						offset += (size_t)snprintf(json_list + offset, sizeof(json_list) - offset, ",");
 					}
 					offset += (size_t)snprintf(json_list + offset, sizeof(json_list) - offset, "\"%s\"", ent->d_name);
-					//is_first = false;
 				}
 			}
 			closedir(dir);

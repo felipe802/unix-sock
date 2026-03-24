@@ -11,18 +11,23 @@ const statusBanner = document.getElementById('statusTurno');
 const celulas = document.querySelectorAll('.cell');
 
 let estadoJogo = null;
+let atualizandoServidor = false;
 
 function buscarEstadoServidor() {
+    if (atualizandoServidor) return;
     fetch('/api/data/' + arquivoSala)
         .then(res => res.json())
         .then(data => {
             estadoJogo = data;
             if (meuSimbolo === 'O' && estadoJogo.players.O === null) {
                 estadoJogo.players.O = jogador;
+                atualizandoServidor = true;
                 fetch('/api/data/' + arquivoSala, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(estadoJogo)
+                }).finally(() => {
+                    atualizandoServidor = false;
                 });
             }
             atualizarInterface();
@@ -64,7 +69,7 @@ function jogar(indice) {
         return;
     }
     if (estadoJogo.board[indice] !== "") {
-        return; 
+        return;
     }
 
     estadoJogo.board[indice] = meuSimbolo;
@@ -78,24 +83,27 @@ function jogar(indice) {
 
     atualizarInterface();
 
+    atualizandoServidor = true;
     fetch('/api/data/' + arquivoSala, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(estadoJogo)
+    }).finally(() => {
+        atualizandoServidor = false;
     });
 }
 
 function verificarVencedor() {
     const vitorias = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8], 
-        [0, 3, 6], [1, 4, 7], [2, 5, 8], 
-        [0, 4, 8], [2, 4, 6]             
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
     ];
 
     for (let combo of vitorias) {
         const [a, b, c] = combo;
-        if (estadoJogo.board[a] && 
-            estadoJogo.board[a] === estadoJogo.board[b] && 
+        if (estadoJogo.board[a] &&
+            estadoJogo.board[a] === estadoJogo.board[b] &&
             estadoJogo.board[a] === estadoJogo.board[c]) {
             estadoJogo.winner = estadoJogo.board[a];
             return;
@@ -107,5 +115,5 @@ function voltarParaLobby() {
     window.location.href = "/";
 }
 
-setInterval(buscarEstadoServidor, 1000);
+setInterval(buscarEstadoServidor, 1024);
 buscarEstadoServidor();
