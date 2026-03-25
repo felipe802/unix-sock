@@ -50,8 +50,8 @@ function abrirArquivo(nomeArquivo) {
 
 btnNovo.onclick = () => {
     let nome = inputNovo.value.trim();
-    if(!nome) return;
-    if(!nome.includes('.')) nome += '.txt';
+    if (!nome) return;
+    if (!nome.includes('.')) nome += '.txt';
 
     fetch('/api/data/' + nome, { method: 'POST', body: "" })
         .then(() => {
@@ -71,14 +71,14 @@ btnSalvar.onclick = () => {
         headers: { 'Content-Type': 'text/plain' },
         body: editor.value
     })
-    .then(res => {
-        if(res.ok) mostrarStatus("Salvo com sucesso!", "sucesso");
-        else mostrarStatus("Erro ao salvar.", "erro");
-    })
-    .finally(() => {
-        btnSalvar.textContent = 'Salvar Arquivo';
-        btnSalvar.disabled = false;
-    });
+        .then(res => {
+            if (res.ok) mostrarStatus("Salvo com sucesso!", "sucesso");
+            else mostrarStatus("Erro ao salvar.", "erro");
+        })
+        .finally(() => {
+            btnSalvar.textContent = 'Salvar Arquivo';
+            btnSalvar.disabled = false;
+        });
 };
 
 btnExcluir.onclick = () => {
@@ -87,21 +87,21 @@ btnExcluir.onclick = () => {
     btnExcluir.disabled = true;
 
     fetch('/api/data/' + arquivoAtual, { method: 'DELETE' })
-    .then(res => {
-        if(res.ok) {
-            arquivoAtual = null;
-            currentFileSpan.textContent = "Nenhum arquivo selecionado";
-            editor.value = "";
-            editor.disabled = true;
-            btnSalvar.disabled = true;
-            btnExcluir.disabled = true;
-            mostrarStatus("Excluído com sucesso!", "sucesso");
-            carregarListaArquivos();
-        } else {
-            mostrarStatus("Erro ao excluir.", "erro");
-            btnExcluir.disabled = false;
-        }
-    });
+        .then(res => {
+            if (res.ok) {
+                arquivoAtual = null;
+                currentFileSpan.textContent = "Nenhum arquivo selecionado";
+                editor.value = "";
+                editor.disabled = true;
+                btnSalvar.disabled = true;
+                btnExcluir.disabled = true;
+                mostrarStatus("Excluído com sucesso!", "sucesso");
+                carregarListaArquivos();
+            } else {
+                mostrarStatus("Erro ao excluir.", "erro");
+                btnExcluir.disabled = false;
+            }
+        });
 };
 
 function mostrarStatus(msg, classe) {
@@ -110,4 +110,4 @@ function mostrarStatus(msg, classe) {
     setTimeout(() => { statusMsg.className = 'status-oculto'; }, 3000);
 }
 
-setInterval(carregarListaArquivos, 4096);
+setInterval(carregarListaArquivos, 2048);

@@ -4,6 +4,7 @@
 #include <strings.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -33,9 +34,16 @@ static const char *get_mime_type(const char *path)
 	{
 		const char *ext;
 		const char *type;
-	} mime_map[] = {{".html", "text/html"},        {".css", "text/css"},    {".js", "application/javascript"},
-	                {".json", "application/json"}, {".png", "image/png"},   {".jpg", "image/jpeg"},
-	                {".jpeg", "image/jpeg"},       {".ico", "image/x-icon"}};
+	} mime_map[] = {
+	    {".html", "text/html"},
+	    {".css", "text/css"},
+	    {".js", "application/javascript"},
+	    {".json", "application/json"},
+	    {".png", "image/png"},
+	    {".jpg", "image/jpeg"},
+	    {".jpeg", "image/jpeg"},
+	    {".ico", "image/x-icon"}
+	};
 
 	size_t map_size = sizeof(mime_map) / sizeof(mime_map[0]);
 	for (size_t i = 0; i < map_size; i++)
@@ -54,7 +62,12 @@ static http_method_t parse_method(const char *method_str)
 		const char *str;
 		http_method_t method;
 	} method_map[] = {
-	    {"GET", HTTP_GET}, {"POST", HTTP_POST}, {"PUT", HTTP_PUT}, {"PATCH", HTTP_PATCH}, {"DELETE", HTTP_DELETE}};
+	    {"GET", HTTP_GET},
+	    {"POST", HTTP_POST},
+	    {"PUT", HTTP_PUT},
+	    {"PATCH", HTTP_PATCH},
+	    {"DELETE", HTTP_DELETE}
+	};
 
 	size_t map_size = sizeof(method_map) / sizeof(method_map[0]);
 	for (size_t i = 0; i < map_size; i++)
@@ -127,16 +140,26 @@ void http_send_response(int client_socket, http_response_t *res)
 	size_t offset = 0;
 	int ret;
 
-	ret = snprintf(header_buffer + offset, sizeof(header_buffer) - offset,
-	               "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nConnection: close\r\n", res->status_code, res->status_message,
-	               res->content_type);
+	ret = snprintf(
+	    header_buffer + offset,
+	    sizeof(header_buffer) - offset,
+	    "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nConnection: keep-alive\r\n",
+	    res->status_code,
+	    res->status_message,
+	    res->content_type
+	);
 	if (ret > 0)
 		offset += (size_t)ret;
 
 	for (size_t i = 0; i < res->header_count && i < MAX_HTTP_HEADERS; i++)
 	{
-		ret = snprintf(header_buffer + offset, sizeof(header_buffer) - offset, "%s: %s\r\n", res->headers[i].key,
-		               res->headers[i].value);
+		ret = snprintf(
+		    header_buffer + offset,
+		    sizeof(header_buffer) - offset,
+		    "%s: %s\r\n",
+		    res->headers[i].key,
+		    res->headers[i].value
+		);
 		if (ret > 0)
 			offset += (size_t)ret;
 	}
@@ -151,8 +174,12 @@ void http_send_response(int client_socket, http_response_t *res)
 		long file_size = ftell(file);
 		fseek(file, 0, SEEK_SET);
 
-		ret =
-		    snprintf(header_buffer + offset, sizeof(header_buffer) - offset, "Content-Length: %ld\r\n\r\n", file_size);
+		ret = snprintf(
+		    header_buffer + offset,
+		    sizeof(header_buffer) - offset,
+		    "Content-Length: %ld\r\n\r\n",
+		    file_size
+		);
 		if (ret > 0)
 			offset += (size_t)ret;
 
@@ -169,8 +196,12 @@ void http_send_response(int client_socket, http_response_t *res)
 	}
 	else
 	{
-		ret = snprintf(header_buffer + offset, sizeof(header_buffer) - offset, "Content-Length: %lu\r\n\r\n",
-		               (unsigned long)res->body_len);
+		ret = snprintf(
+		    header_buffer + offset,
+		    sizeof(header_buffer) - offset,
+		    "Content-Length: %lu\r\n\r\n",
+		    (unsigned long)res->body_len
+		);
 		if (ret > 0)
 			offset += (size_t)ret;
 
@@ -182,7 +213,9 @@ void http_send_response(int client_socket, http_response_t *res)
 	}
 }
 
-void http_send_error(int client_socket, int status_code, const char *status_msg, const char *body)
+void http_send_error(
+    int client_socket, int status_code, const char *status_msg, const char *body
+)
 {
 	http_response_t res = {};
 	res.status_code = status_code;
@@ -214,7 +247,9 @@ static void serve_static_file(int client_socket, http_request_t *req)
 
 	if (stat(target_file, &st_file) == -1)
 	{
-		http_send_error(client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Página não encontrada.");
+		http_send_error(
+		    client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Página não encontrada."
+		);
 		return;
 	}
 
@@ -226,6 +261,138 @@ static void serve_static_file(int client_socket, http_request_t *req)
 	http_send_response(client_socket, &res);
 }
 
+static void configure_socket_timeout(int client_socket, time_t seconds)
+{
+	struct timeval tv = {};
+	tv.tv_sec = seconds;
+	tv.tv_usec = 0;
+	setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+}
+
+static bool read_http_headers(
+    int client_socket, char *buffer, size_t buffer_size, size_t *out_total_received,
+    char **out_separator
+)
+{
+	size_t total_received = 0;
+	while (total_received < buffer_size - 1)
+	{
+		ssize_t bytes = recv(
+		    client_socket, buffer + total_received, buffer_size - 1 - total_received, 0
+		);
+		if (bytes <= 0)
+		{
+			return false;
+		}
+
+		total_received += (size_t)bytes;
+		buffer[total_received] = '\0';
+
+		*out_separator = strstr(buffer, "\r\n\r\n");
+		if (*out_separator != nullptr)
+		{
+			*out_total_received = total_received;
+			return true;
+		}
+	}
+	return false;
+}
+
+static size_t get_content_length(http_request_t *req)
+{
+	for (size_t i = 0; i < req->header_count; i++)
+	{
+		if (strcasecmp(req->headers[i].key, "Content-Length") == 0)
+		{
+			return (size_t)strtoul(req->headers[i].value, nullptr, 10);
+		}
+	}
+	return 0;
+}
+
+static bool read_http_body(
+    int client_socket, http_request_t *req, const char *partial_body_start, size_t partial_len
+)
+{
+	if (req->body_len == 0)
+	{
+		return true;
+	}
+
+	req->body = (char *)malloc(req->body_len + 1);
+	if (!req->body)
+	{
+		return false;
+	}
+
+	if (partial_len > 0)
+	{
+		memcpy(req->body, partial_body_start, partial_len);
+	}
+
+	size_t current_len = partial_len;
+	while (current_len < req->body_len)
+	{
+		ssize_t bytes = recv(
+		    client_socket, req->body + current_len, req->body_len - current_len, 0
+		);
+		if (bytes <= 0)
+		{
+			return false;
+		}
+		current_len += (size_t)bytes;
+	}
+
+	req->body[current_len] = '\0';
+	return true;
+}
+
+static void route_request(int client_socket, http_request_t *req)
+{
+	if (req->path == nullptr)
+	{
+		return;
+	}
+
+	if (strstr(req->path, "..") != nullptr)
+	{
+		http_send_error(client_socket, HTTP_STATUS_FORBIDDEN, "Forbidden", "Acesso Negado.");
+		return;
+	}
+
+	if (!api_handle_request(client_socket, req))
+	{
+		if (req->method == HTTP_GET)
+		{
+			serve_static_file(client_socket, req);
+		}
+		else
+		{
+			http_send_error(
+			    client_socket,
+			    HTTP_STATUS_NOT_ALLOWED,
+			    "Method Not Allowed",
+			    "Método não suportado."
+			);
+		}
+	}
+}
+
+static bool should_keep_alive(http_request_t *req)
+{
+	for (size_t i = 0; i < req->header_count; i++)
+	{
+		if (strcasecmp(req->headers[i].key, "Connection") == 0)
+		{
+			if (strcasecmp(req->headers[i].value, "close") == 0)
+			{
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 void http_handle_client(int client_socket)
 {
 	static bool dirs_checked = false;
@@ -235,107 +402,66 @@ void http_handle_client(int client_socket)
 		dirs_checked = true;
 	}
 
-	char buffer[RECV_BUFFER_SIZE] = {};
-	size_t total_received = 0;
-	char *body_separator = nullptr;
+	configure_socket_timeout(client_socket, 4);
 
-	while (total_received < sizeof(buffer) - 1)
+	bool keep_alive = true;
+
+	while (keep_alive)
 	{
-		ssize_t bytes_received = recv(client_socket, buffer + total_received, sizeof(buffer) - 1 - total_received, 0);
+		char buffer[RECV_BUFFER_SIZE] = {};
+		size_t total_received = 0;
+		char *body_separator = nullptr;
 
-		if (bytes_received <= 0)
-			break;
-
-		total_received += (size_t)bytes_received;
-		buffer[total_received] = '\0';
-
-		body_separator = strstr(buffer, "\r\n\r\n");
-		if (body_separator != nullptr)
+		if (!read_http_headers(
+		        client_socket, buffer, sizeof(buffer), &total_received, &body_separator
+		    ))
 		{
 			break;
 		}
-	}
 
-	if (total_received <= 0 || body_separator == nullptr)
-	{
-		return;
-	}
+		*body_separator = '\0';
+		char *partial_body_start = body_separator + 4;
+		size_t header_length = (size_t)(partial_body_start - buffer);
 
-	*body_separator = '\0';
+		http_request_t req = {};
+		parse_http_request(buffer, &req);
 
-	char *partial_body_start = body_separator + 4;
-	size_t header_length = (size_t)(partial_body_start - buffer);
+		req.body_len = get_content_length(&req);
 
-	http_request_t req = {};
-	parse_http_request(buffer, &req);
+		printf(
+		    "[INFO] Method: %d | Path: %s | Content-Length: %zu\n",
+		    req.method,
+		    req.path,
+		    req.body_len
+		);
 
-	for (size_t i = 0; i < req.header_count; i++)
-	{
-		if (strcasecmp(req.headers[i].key, "Content-Length") == 0)
+		size_t partial_len = total_received - header_length;
+		if (!read_http_body(client_socket, &req, partial_body_start, partial_len))
 		{
-			req.body_len = (size_t)strtoul(req.headers[i].value, nullptr, 10);
-			break;
-		}
-	}
-
-	printf("[INFO] Method: %d | Path: %s | Content-Length: %zu\n", req.method, req.path, req.body_len);
-
-	if (req.body_len > 0)
-	{
-		req.body = (char *)malloc(req.body_len + 1);
-		if (!req.body)
-		{
-			printf("[ERRO] Falha de alocacao de memoria para o corpo (Out of Memory).\n");
-			http_send_error(client_socket, 500, "Internal Server Error", "Memory full");
-			return;
-		}
-
-		size_t bytes_already_read_for_body = total_received - header_length;
-		if (bytes_already_read_for_body > 0)
-		{
-			memcpy(req.body, partial_body_start, bytes_already_read_for_body);
-		}
-
-		size_t current_body_bytes = bytes_already_read_for_body;
-		while (current_body_bytes < req.body_len)
-		{
-			size_t bytes_to_read = req.body_len - current_body_bytes;
-
-			ssize_t bytes = recv(client_socket, req.body + current_body_bytes, bytes_to_read, 0);
-
-			if (bytes <= 0)
+			if (req.body_len > 0 && req.body == nullptr)
 			{
-				printf("[WARN] Cliente fechou a conexao TCP prematuramente durante o upload.\n");
-				break;
-			}
-
-			current_body_bytes += (size_t)bytes;
-		}
-
-		req.body[current_body_bytes] = '\0';
-	}
-
-	if (req.path != nullptr)
-	{
-		if (strstr(req.path, "..") != nullptr)
-		{
-			http_send_error(client_socket, HTTP_STATUS_FORBIDDEN, "Forbidden", "Acesso Negado.");
-		}
-		else if (!api_handle_request(client_socket, &req))
-		{
-			if (req.method == HTTP_GET)
-			{
-				serve_static_file(client_socket, &req);
+				printf("[ERRO] Falha de alocacao de memoria para o corpo (Out of Memory).\n");
+				http_send_error(client_socket, 500, "Internal Server Error", "Memory full");
 			}
 			else
 			{
-				http_send_error(client_socket, HTTP_STATUS_NOT_ALLOWED, "Method Not Allowed", "Método não suportado.");
+				printf(
+				    "[WARN] Cliente fechou a conexao TCP prematuramente durante o upload.\n"
+				);
 			}
-		}
-	}
 
-	if (req.body != nullptr)
-	{
-		free(req.body);
+			if (req.body)
+				free(req.body);
+			break;
+		}
+
+		route_request(client_socket, &req);
+
+		keep_alive = should_keep_alive(&req);
+
+		if (req.body != nullptr)
+		{
+			free(req.body);
+		}
 	}
 }

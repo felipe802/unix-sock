@@ -52,7 +52,9 @@ typedef struct http_response
 } http_response_t;
 
 void http_send_response(int client_socket, http_response_t *res);
-void http_send_error(int client_socket, int status_code, const char *status_msg, const char *body);
+void http_send_error(
+    int client_socket, int status_code, const char *status_msg, const char *body
+);
 void http_handle_client(int client_socket);
 
 #endif

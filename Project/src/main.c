@@ -116,8 +116,10 @@ int main()
 
 	int server_fd = server_init(PORT, IP_MODE_DUAL_STACK);
 
-	struct pollfd fds[POLL_EVENT_COUNT] = {{.fd = server_fd, .events = POLLIN, .revents = 0},
-	                                       {.fd = pipe_read_fd, .events = POLLIN, .revents = 0}};
+	struct pollfd fds[POLL_EVENT_COUNT] = {
+	    {.fd = server_fd, .events = POLLIN, .revents = 0},
+	    {.fd = pipe_read_fd, .events = POLLIN, .revents = 0}
+	};
 
 	int running = 1;
 

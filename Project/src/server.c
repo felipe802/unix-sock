@@ -29,7 +29,8 @@ static void log_server_addresses(uint16_t port, ip_mode_t mode)
 		return;
 	}
 
-	for (struct ifaddrs *temp_addr = interfaces; temp_addr != nullptr; temp_addr = temp_addr->ifa_next)
+	for (struct ifaddrs *temp_addr = interfaces; temp_addr != nullptr;
+	     temp_addr = temp_addr->ifa_next)
 	{
 		if (temp_addr->ifa_addr == nullptr)
 			continue;
@@ -42,7 +43,9 @@ static void log_server_addresses(uint16_t port, ip_mode_t mode)
 			inet_ntop(AF_INET, &sock_addr->sin_addr, ip_str, sizeof(ip_str));
 			printf("        [IPv4]      -> http://%s:%u/\n", ip_str, port);
 		}
-		else if (family == AF_INET6 && (mode == IP_MODE_IPV6_ONLY || mode == IP_MODE_DUAL_STACK))
+		else if (
+		    family == AF_INET6 && (mode == IP_MODE_IPV6_ONLY || mode == IP_MODE_DUAL_STACK)
+		)
 		{
 			struct sockaddr_in6 *sock_addr6 = (struct sockaddr_in6 *)temp_addr->ifa_addr;
 			inet_ntop(AF_INET6, &sock_addr6->sin6_addr, ip_str, sizeof(ip_str));

@@ -115,5 +115,5 @@ function voltarParaLobby() {
     window.location.href = "/";
 }
 
-setInterval(buscarEstadoServidor, 1024);
+setInterval(buscarEstadoServidor, 512);
 buscarEstadoServidor();

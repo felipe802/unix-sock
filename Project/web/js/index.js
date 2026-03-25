@@ -92,4 +92,4 @@ function entrarSala(arquivoSala) {
         });
 }
 
-setInterval(carregarSalas, 2048);
+setInterval(carregarSalas, 1024);

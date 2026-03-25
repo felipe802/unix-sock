@@ -81,9 +81,13 @@ static void api_handle_get(int client_socket, http_request_t *req)
 				{
 					if (offset > 1)
 					{
-						offset += (size_t)snprintf(json_list + offset, sizeof(json_list) - offset, ",");
+						offset += (size_t)snprintf(
+						    json_list + offset, sizeof(json_list) - offset, ","
+						);
 					}
-					offset += (size_t)snprintf(json_list + offset, sizeof(json_list) - offset, "\"%s\"", ent->d_name);
+					offset += (size_t)snprintf(
+					    json_list + offset, sizeof(json_list) - offset, "\"%s\"", ent->d_name
+					);
 				}
 			}
 			closedir(dir);
@@ -105,7 +109,12 @@ static void api_handle_get(int client_socket, http_request_t *req)
 		const char *filename = req->path + strlen(API_DATA_PREFIX);
 		if (strchr(filename, '/') != nullptr)
 		{
-			http_send_error(client_socket, HTTP_STATUS_FORBIDDEN, "Forbidden", "Subdiretórios não permitidos.");
+			http_send_error(
+			    client_socket,
+			    HTTP_STATUS_FORBIDDEN,
+			    "Forbidden",
+			    "Subdiretórios não permitidos."
+			);
 			return;
 		}
 
@@ -115,7 +124,9 @@ static void api_handle_get(int client_socket, http_request_t *req)
 		struct stat st;
 		if (stat(filepath, &st) == -1)
 		{
-			http_send_error(client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Arquivo não encontrado.");
+			http_send_error(
+			    client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Arquivo não encontrado."
+			);
 			return;
 		}
 
@@ -128,7 +139,9 @@ static void api_handle_get(int client_socket, http_request_t *req)
 		return;
 	}
 
-	http_send_error(client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Rota de API inexistente.");
+	http_send_error(
+	    client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Rota de API inexistente."
+	);
 }
 
 static void api_handle_post(int client_socket, http_request_t *req)
@@ -160,7 +173,9 @@ static void api_handle_post(int client_socket, http_request_t *req)
 		return;
 	}
 
-	http_send_error(client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Rota POST desconhecida.");
+	http_send_error(
+	    client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Rota POST desconhecida."
+	);
 }
 
 static void api_handle_put(int client_socket, http_request_t *req)
@@ -192,7 +207,9 @@ static void api_handle_put(int client_socket, http_request_t *req)
 		return;
 	}
 
-	http_send_error(client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Rota PUT desconhecida.");
+	http_send_error(
+	    client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Rota PUT desconhecida."
+	);
 }
 
 static void api_handle_patch(int client_socket, http_request_t *req)
@@ -224,7 +241,9 @@ static void api_handle_patch(int client_socket, http_request_t *req)
 		return;
 	}
 
-	http_send_error(client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Rota PATCH desconhecida.");
+	http_send_error(
+	    client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Rota PATCH desconhecida."
+	);
 }
 
 static void api_handle_delete(int client_socket, http_request_t *req)
@@ -240,15 +259,21 @@ static void api_handle_delete(int client_socket, http_request_t *req)
 
 		if (remove(filepath) == 0)
 		{
-			http_send_error(client_socket, HTTP_STATUS_OK, "OK", "Arquivo apagado com sucesso (DELETE).");
+			http_send_error(
+			    client_socket, HTTP_STATUS_OK, "OK", "Arquivo apagado com sucesso (DELETE)."
+			);
 		}
 		else
 		{
-			http_send_error(client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Erro ao apagar arquivo.");
+			http_send_error(
+			    client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Erro ao apagar arquivo."
+			);
 		}
 		return;
 	}
-	http_send_error(client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Rota DELETE desconhecida.");
+	http_send_error(
+	    client_socket, HTTP_STATUS_NOT_FOUND, "Not Found", "Rota DELETE desconhecida."
+	);
 }
 
 bool api_handle_request(int client_socket, http_request_t *req)
@@ -265,13 +290,18 @@ bool api_handle_request(int client_socket, http_request_t *req)
 		char header_buffer[AUTH_HEADER_BUFFER_SIZE];
 		const char *body = "Não autorizado. Credenciais incorretas ou ausentes.";
 
-		snprintf(header_buffer, sizeof(header_buffer),
-		         "HTTP/1.1 401 Unauthorized\r\n"
-		         "WWW-Authenticate: Basic realm=\"%s\"\r\n"
-		         "Content-Length: %zu\r\n"
-		         "Connection: close\r\n\r\n"
-		         "%s",
-		         AUTH_REALM, strlen(body), body);
+		snprintf(
+		    header_buffer,
+		    sizeof(header_buffer),
+		    "HTTP/1.1 401 Unauthorized\r\n"
+		    "WWW-Authenticate: Basic realm=\"%s\"\r\n"
+		    "Content-Length: %zu\r\n"
+		    "Connection: close\r\n\r\n"
+		    "%s",
+		    AUTH_REALM,
+		    strlen(body),
+		    body
+		);
 
 		send(client_socket, header_buffer, strlen(header_buffer), 0);
 		return true;
@@ -300,7 +330,12 @@ bool api_handle_request(int client_socket, http_request_t *req)
 		api_handle_delete(client_socket, req);
 		break;
 	default:
-		http_send_error(client_socket, HTTP_STATUS_NOT_ALLOWED, "Method Not Allowed", "Método não suportado na API.");
+		http_send_error(
+		    client_socket,
+		    HTTP_STATUS_NOT_ALLOWED,
+		    "Method Not Allowed",
+		    "Método não suportado na API."
+		);
 		break;
 	}
 

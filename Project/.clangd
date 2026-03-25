@@ -20,7 +20,7 @@ CompileFlags:
 ---
 
 If:
-  PathMatch: .*\.c$
+  PathMatch: .*\.(c|h)$
 CompileFlags:
   Add: [-std=c23]
 
